@@ -74,7 +74,7 @@ void write_kernel(FILE *image, FILE *knfile, Elf32_Phdr *Phdr, int kernelsz)
 
     for(i = 0; i < kn_head.e_phnum; i++){		//get program from kernel
 		fseek(knfile, total_phdr[i].p_offset, SEEK_SET);
-		fread(temp,total_phdr[i].p_filesz, 1, knfile);
+		fread(temp,total_phdr[i].p_memsz, 1, knfile);
     }
     
     fwrite(temp, kernelsz, 1, image);			//write kernel to image
@@ -117,7 +117,7 @@ int get_kernelsz( FILE *knfile, Elf32_Phdr *Phdr){
 
 	for(i = 0; i < kn_head.e_phnum; i++){			//get total size of kernel
 		fseek(knfile, total_phdr[i].p_offset, SEEK_SET);
-		total_size += total_phdr[i].p_filesz;
+		total_size += total_phdr[i].p_memsz;
     }
     fseek(knfile, 0, SEEK_SET);
     return total_size;
