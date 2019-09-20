@@ -33,6 +33,9 @@
 #include "queue.h"
 
 #define NUM_MAX_TASK 16
+#define STACK_SIZE 0x10000
+#define STACK_MAX  0xa1000000
+#define STACK_MIN  0xa0f00000
 
 /* used to save register infomation */
 typedef struct regs_context

@@ -19,7 +19,19 @@ static void check_sleeping()
 
 void scheduler(void)
 {
-    // TODO schedule
+
+	if(current_running->status!=TASK_BLOCKED){
+		current_running->status=TASK_READY;
+		if(current_running->pid!=1)
+			queue_push(&ready_queue,current_running);
+	}
+	if(!queue_is_empty(&ready_queue)){
+		current_running=(pcb_t *)queue_dequeue(&ready_queue);
+		current_running->status=TASK_RUNNING;
+	}
+	else
+		current_running=NULL;
+	//current_running->status=TASK_RUNNING;
     // Modify the current_running pointer.
 }
 

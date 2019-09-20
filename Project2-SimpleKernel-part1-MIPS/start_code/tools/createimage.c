@@ -30,7 +30,7 @@ uint8_t count_kernel_sectors(Elf32_Phdr *Phdr)
 	uint8_t num;
 	num=(Phdr->p_memsz-1)/512+1;						//结果上取整
 	// printf("p_memsz:%d\n",Phdr->p_memsz);
-	// printf("num:%d\n",num);
+	//printf("num:%d\n",num);
 	return num;
 
 }
@@ -94,10 +94,11 @@ void record_kernel_sectors(FILE *image, uint8_t kernelsz)
 
 void extent_opt(Elf32_Phdr *Phdr_bb, Elf32_Phdr *Phdr_k, int kernelsz)
 {
-	printf("kernelsz : %d\n",kernelsz );
+	printf("kernelsz : 0x%x\n",kernelsz );
     printf("virtual addredd: 0x%x\n", Phdr_bb->p_vaddr);
     printf("segment size in file: 0x%x\n", Phdr_bb->p_filesz+Phdr_k->p_filesz);
     printf("segment size in memory: 0x%x\n", Phdr_bb->p_memsz+Phdr_k->p_memsz);
+    printf("sector_num:%d\n",(Phdr_k->p_memsz+511)/512 );
 
 }
 
@@ -132,7 +133,7 @@ int main()
 	Elf32_Phdr *bootblock_phdr,*kernel_phdr; 
 
 	bootblock_file=fopen("bootblock","rb");
-	kernel_file=fopen("kernel","rb");
+	kernel_file=fopen("main","rb");
 
 	bootblock_phdr=read_exec_file(bootblock_file);
 	kernel_phdr=read_exec_file(kernel_file);
@@ -141,9 +142,10 @@ int main()
 
 	write_bootblock(image_file,bootblock_file,bootblock_phdr);
 	kernelsz=get_kernelsz(kernel_file,kernel_phdr);
+	sector_num=count_kernel_sectors(kernel_phdr);
 	write_kernel(image_file,kernel_file,kernel_phdr,kernelsz);
 
-	record_kernel_sectors(image_file,(uint8_t)kernelsz);
+	record_kernel_sectors(image_file,sector_num);
 	extent_opt(bootblock_phdr,kernel_phdr,kernelsz);
 
 	fclose(bootblock_file);
