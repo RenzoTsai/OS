@@ -36,31 +36,40 @@ queue_t ready_queue;
 queue_t block_queue;
 uint32_t initial_cp0_status;
 
+
 static void init_pcb()
 {
 	int i,j;
 	pcb[0].pid=process_id++;
 	pcb[0].status=TASK_RUNNING;
+	int stack_top=STACK_MAX;
 	
 	queue_init(&ready_queue);
 	for(i=0;i<num_sched1_tasks;i++){
+		bzero(&pcb[i+1].kernel_context, sizeof(pcb[i+1].kernel_context));
+		bzero(&pcb[i+1].user_context, sizeof(pcb[i+1].user_context));
+
 		pcb[i+1].pid=process_id++;
 		pcb[i+1].type=sched1_tasks[i]->type;
-		
 		pcb[i+1].status=TASK_READY;
-		for(j=0;j<29;j++){
-			pcb[i+1].kernel_context.regs[j]=0;
-		}
-		pcb[i+1].kernel_stack_top=STACK_MAX-i*STACK_MIN;
-		pcb[i+1].kernel_context.regs[29]=STACK_MAX-i*STACK_MIN;
-		pcb[i+1].kernel_context.regs[30]=STACK_MAX-i*STACK_MIN;
+
+		pcb[i+1].kernel_stack_top=stack_top;
+		pcb[i+1].kernel_context.regs[29]=stack_top;
+		stack_top-=STACK_SIZE;
+
 		pcb[i+1].kernel_context.regs[31]=sched1_tasks[i]->entry_point;
-		pcb[i+1].kernel_context.cp0_status = 0x10008000;
-		pcb[i+1].kernel_context.cp0_epc = sched1_tasks[i]->entry_point;
+		
+		// pcb[i+1].user_stack_top=stack_top;
+		// pcb[i+1].user_context.regs[29]=stack_top;
+		// stack_top-=STACK_SIZE;
+
+		// pcb[i+1].user_context.regs[31]=sched1_tasks[i]->entry_point;
+		
 		//printk("1\n");
 		queue_push(&ready_queue,(void *)&pcb[i+1]);
 		//printk("2\n");
 	}
+	current_running=&pcb[0];
 
 	
 }
@@ -79,6 +88,7 @@ static void init_exception()
 
 static void init_syscall(void)
 {
+
 	// init system call table.
 }
 

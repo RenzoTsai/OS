@@ -19,18 +19,24 @@ static void check_sleeping()
 
 void scheduler(void)
 {
+	pcb_t *next_running;
+	if(!queue_is_empty(&ready_queue))
+		next_running=(pcb_t *)queue_dequeue(&ready_queue);
+	else
+		next_running=current_running;
 
 	if(current_running->status!=TASK_BLOCKED){
 		current_running->status=TASK_READY;
 		if(current_running->pid!=1)
 			queue_push(&ready_queue,current_running);
 	}
-	if(!queue_is_empty(&ready_queue)){
-		current_running=(pcb_t *)queue_dequeue(&ready_queue);
-		current_running->status=TASK_RUNNING;
-	}
-	else
-		current_running=NULL;
+	
+	
+	current_running=next_running;
+	current_running->status=TASK_RUNNING;
+	//printk("changed\n");
+
+	
 	//current_running->status=TASK_RUNNING;
     // Modify the current_running pointer.
 }
@@ -42,6 +48,9 @@ void do_sleep(uint32_t sleep_time)
 
 void do_block(queue_t *queue)
 {
+	current_running->status=TASK_BLOCKED;
+	queue_push(queue,(void*)current_running);
+	do_scheduler();
     // block the current_running task into the queue
 }
 

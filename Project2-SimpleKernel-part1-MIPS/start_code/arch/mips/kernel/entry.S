@@ -23,7 +23,8 @@ LEAF(asm_start)
 END(asm_start)
 
 .macro SAVE_CONTEXT offset
-    la k0,current_running
+    lw k0,current_running
+    addi k0,k0,\offset
     sw zero,OFFSET_REG0(k0)
     sw AT,OFFSET_REG1(k0)
     sw v0,OFFSET_REG2(k0)
@@ -73,11 +74,13 @@ END(asm_start)
     nop
     sw      k1, OFFSET_EPC(k0)
     
+    
     // TODO save context
 .endm
 
 .macro RESTORE_CONTEXT offset
-    la k0,current_running
+    addi k0,k0,\offset
+    lw k0,current_running
     lw zero,OFFSET_REG0(k0)
     lw AT,OFFSET_REG1(k0)
     lw v0,OFFSET_REG2(k0)
