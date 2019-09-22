@@ -35,7 +35,7 @@
 queue_t ready_queue;
 queue_t block_queue;
 uint32_t initial_cp0_status;
-
+uint32_t queue_id;
 
 static void init_pcb()
 {
@@ -43,35 +43,42 @@ static void init_pcb()
 	pcb[0].pid=process_id++;
 	pcb[0].status=TASK_RUNNING;
 	int stack_top=STACK_MAX;
+	queue_id=1;
 	
 	queue_init(&ready_queue);
-	for(i=0;i<num_sched1_tasks;i++){
-		bzero(&pcb[i+1].kernel_context, sizeof(pcb[i+1].kernel_context));
-		bzero(&pcb[i+1].user_context, sizeof(pcb[i+1].user_context));
+	queue_init(&block_queue);
+	for(i=0;i<num_sched1_tasks;i++,queue_id++){
+		for(j=0;j<32;j++){
+			pcb[queue_id].kernel_context.regs[j]=0;
+		}
+		pcb[queue_id].pid=process_id++;
+		pcb[queue_id].type=sched1_tasks[i]->type;
+		pcb[queue_id].status=TASK_READY;
 
-		pcb[i+1].pid=process_id++;
-		pcb[i+1].type=sched1_tasks[i]->type;
-		pcb[i+1].status=TASK_READY;
-
-		pcb[i+1].kernel_stack_top=stack_top;
-		pcb[i+1].kernel_context.regs[29]=stack_top;
+		pcb[queue_id].kernel_stack_top=stack_top;
+		pcb[queue_id].kernel_context.regs[29]=stack_top;
 		stack_top-=STACK_SIZE;
 
-		pcb[i+1].kernel_context.regs[31]=sched1_tasks[i]->entry_point;
-		
-		// pcb[i+1].user_stack_top=stack_top;
-		// pcb[i+1].user_context.regs[29]=stack_top;
-		// stack_top-=STACK_SIZE;
-
-		// pcb[i+1].user_context.regs[31]=sched1_tasks[i]->entry_point;
-		
-		//printk("1\n");
-		queue_push(&ready_queue,(void *)&pcb[i+1]);
-		//printk("2\n");
+		pcb[queue_id].kernel_context.regs[31]=sched1_tasks[i]->entry_point;
+		queue_push(&ready_queue,(void *)&pcb[queue_id]);
 	}
-	current_running=&pcb[0];
 
-	
+	for(i=0;i<num_lock_tasks;i++,queue_id++){
+		for(j=0;j<32;j++){
+			pcb[queue_id].kernel_context.regs[j]=0;
+		}
+		pcb[queue_id].pid=process_id++;
+		pcb[queue_id].type=lock_tasks[i]->type;
+		pcb[queue_id].status=TASK_READY;
+
+		pcb[queue_id].kernel_stack_top=stack_top;
+		pcb[queue_id].kernel_context.regs[29]=stack_top;
+		stack_top-=STACK_SIZE;
+
+		pcb[queue_id].kernel_context.regs[31]=lock_tasks[i]->entry_point;
+		queue_push(&ready_queue,(void *)&pcb[queue_id]);
+	}
+	 current_running=&pcb[0];
 }
 
 static void init_exception_handler()
