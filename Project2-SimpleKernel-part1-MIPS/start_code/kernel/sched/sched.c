@@ -19,8 +19,6 @@ static void check_sleeping()
 
 void scheduler(void)
 {
-	//pcb_t *next_running;
-	
 
 	if(current_running->status!=TASK_BLOCKED){
 		current_running->status=TASK_READY;
@@ -30,9 +28,7 @@ void scheduler(void)
 	}
 	if(!queue_is_empty(&ready_queue))
 		current_running=(pcb_t *)queue_dequeue(&ready_queue);
-	// else
-	// 	next_running=current_running;
-	//current_running=next_running;
+
 	current_running->status=TASK_RUNNING;
 }
 
