@@ -118,6 +118,7 @@ extern pid_t process_id;
 
 extern pcb_t pcb[NUM_MAX_TASK];
 extern uint32_t initial_cp0_status;
+extern exception_handler[32];
 
 void do_scheduler(void);
 void do_sleep(uint32_t);

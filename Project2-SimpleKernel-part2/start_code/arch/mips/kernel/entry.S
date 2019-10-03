@@ -3,10 +3,18 @@
 .equ    KERNEL, 0
 .equ    USER,   156
 
+#allow interrupt
 .macro STI
+    mfc0 k0,CP0_STATUS
+    ori  k0, STATUS_IE 
+    mtc0 CP0_STATUS,k0
 .endm
 
+#close interrupt
 .macro CLI
+    mfc0 k0,CP0_STATUS
+    andi  k0,0xfffffffa
+    mtc0 CP0_STATUS,k0
 .endm
 
 LEAF(asm_start)
@@ -21,6 +29,38 @@ LEAF(asm_start)
     
     jr  ra
 END(asm_start)
+
+#GET & SET SOME CP0 REGS 
+LEAF(GET_CP0_STATUS)
+    mfc0 v0,CP0_STATUS
+    jr ra
+END(GET_CP0_STATUS)
+
+LEAF(GET_CP0_COUNT)
+    mfc0 v0,CP0_COUNT
+    jr ra
+END(GET_CP0_COUNT)
+
+LEAF(GET_CP0_COUNT)
+    mfc0 v0,CP0_COUNT
+    jr ra
+END(GET_CP0_COUNT)
+
+LEAF(SET_CP0_STATUS)
+    mtc0 a0,CP0_STATUS
+    jr ra
+END(SET_CP0_STATUS)
+
+LEAF(SET_CP0_COUNT)
+    mtc0 a0,CP0_COUNT
+    jr ra
+END(SET_CP0_COUNT)
+
+LEAF(SET_CP0_COUNT)
+    mtc0 a0,CP0_COUNT
+    jr ra
+END(SET_CP0_COUNT)
+
 
 .macro SAVE_CONTEXT offset
     lw k0,current_running
@@ -140,6 +180,15 @@ END(do_scheduler)
 
 NESTED(exception_handler_entry, 0, sp)   
 exception_handler_begin:
+    CLI
+    SAVE_CONTEXT(USER)
+    mfc0 k0, CP0_CAUSE
+    andi k0, k0,CAUSE_EXCCODE
+    la   k1, exception_handler
+    add  k0,k0,k1
+    la   k0, k0
+    jr   k0
+
     // TODO close interrupt
     // jmp exception_handler[i] which decided by CP0_CAUSE
     // Leve2 exception Handler.
@@ -147,6 +196,12 @@ exception_handler_end:
 END(exception_handler_entry)
 
 NESTED(handle_int, 0, sp)
+    mfc0 a0, CP0_STATUS
+    mfc0 a1, CP0_CAUSE
+    addi sp, sp, -8
+    jal  interrupt_helper
+    addi sp, sp, 8
+
     // interrupt handler
     // Leve3 exception Handler.
 END(handle_int)
