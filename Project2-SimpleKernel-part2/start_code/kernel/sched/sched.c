@@ -17,20 +17,49 @@ static void check_sleeping()
 {
 }
 
+// void scheduler(void)
+// {
+
+// 	if(current_running->status!=TASK_BLOCKED){
+// 		current_running->status=TASK_READY;
+// 		if(current_running->pid!=1){
+// 			queue_push(&ready_queue,current_running);
+// 		}
+// 	}
+// 	if(!queue_is_empty(&ready_queue))
+// 		current_running=(pcb_t *)queue_dequeue(&ready_queue);
+
+// 	current_running->status=TASK_RUNNING;
+// }
+
 void scheduler(void)
 {
+    pcb_t *next_running, *p;
+    if(queue_is_empty(&ready_queue))
+        next_running = current_running;
+    else
+        next_running = (pcb_t *)queue_dequeue(&ready_queue);
 
-	if(current_running->status!=TASK_BLOCKED){
-		current_running->status=TASK_READY;
-		if(current_running->pid!=1){
-			queue_push(&ready_queue,current_running);
-		}
-	}
-	if(!queue_is_empty(&ready_queue))
-		current_running=(pcb_t *)queue_dequeue(&ready_queue);
+    if(current_running->status != TASK_BLOCKED && next_running != current_running)
+    {
+        current_running->status = TASK_READY;
+        if(current_running->pid != 1)
+        {
+            priority_queue_push(&ready_queue, current_running);
+        }
+    }
+    current_running = next_running;
+    current_running->priority = current_running->task_priority;
+    current_running->status = TASK_RUNNING;
 
-	current_running->status=TASK_RUNNING;
+    p = (pcb_t *)ready_queue.head;
+    while(p != NULL)
+    {
+        p->priority += 1;
+        p = p->next;
+    }
 }
+
 
 void do_sleep(uint32_t sleep_time)
 {

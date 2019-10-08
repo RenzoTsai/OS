@@ -13,8 +13,9 @@
 #close interrupt
 .macro CLI
     mfc0 k0,CP0_STATUS
-    andi  k0,0xfffffffa
-    mtc0 CP0_STATUS,k0
+    li   k1,0xfffffffe
+    and  k0,k0,k1
+    mtc0 k0,CP0_STATUS
 .endm
 
 LEAF(asm_start)
@@ -41,10 +42,10 @@ LEAF(GET_CP0_COUNT)
     jr ra
 END(GET_CP0_COUNT)
 
-LEAF(GET_CP0_COUNT)
-    mfc0 v0,CP0_COUNT
+LEAF(GET_CP0_COMPARE)
+    mfc0 v0,CP0_COMPARE
     jr ra
-END(GET_CP0_COUNT)
+END(GET_CP0_COMPARE)
 
 LEAF(SET_CP0_STATUS)
     mtc0 a0,CP0_STATUS
@@ -56,10 +57,10 @@ LEAF(SET_CP0_COUNT)
     jr ra
 END(SET_CP0_COUNT)
 
-LEAF(SET_CP0_COUNT)
-    mtc0 a0,CP0_COUNT
+LEAF(SET_CP0_COMPARE)
+    mtc0 a0,CP0_COMPARE
     jr ra
-END(SET_CP0_COUNT)
+END(SET_CP0_COMPARE)
 
 
 .macro SAVE_CONTEXT offset
@@ -186,8 +187,11 @@ exception_handler_begin:
     andi k0, k0,CAUSE_EXCCODE
     la   k1, exception_handler
     add  k0,k0,k1
-    la   k0, k0
+    lw   k0, 0(k0)
     jr   k0
+    RESTORE_CONTEXT(USER)
+    STI
+    eret
 
     // TODO close interrupt
     // jmp exception_handler[i] which decided by CP0_CAUSE

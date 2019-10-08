@@ -44,6 +44,8 @@ void queue_push(queue_t *queue, void *item);
 
 void *queue_dequeue(queue_t *queue);
 
+void priority_queue_push(queue_t *queue, void *item);
+
 /* remove this item and return next item */
 void *queue_remove(queue_t *queue, void *item);
 

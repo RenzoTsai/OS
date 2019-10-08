@@ -96,6 +96,8 @@ typedef struct pcb
     /* cursor position */
     int cursor_x;
     int cursor_y;
+    int priority;
+    int task_priority;
 
 } pcb_t;
 
@@ -104,6 +106,7 @@ typedef struct task_info
 {
     uint32_t entry_point;
     task_type_t type;
+    int priority;
 } task_info_t;
 
 /* ready queue to run */
@@ -118,7 +121,7 @@ extern pid_t process_id;
 
 extern pcb_t pcb[NUM_MAX_TASK];
 extern uint32_t initial_cp0_status;
-extern exception_handler[32];
+extern uint32_t exception_handler[32];
 
 void do_scheduler(void);
 void do_sleep(uint32_t);

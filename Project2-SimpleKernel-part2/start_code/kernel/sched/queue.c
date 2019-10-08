@@ -37,6 +37,41 @@ void queue_push(queue_t *queue, void *item)
     }
 }
 
+void priority_queue_push(queue_t *queue, void *item)
+{
+    item_t *_item = (item_t *)item;
+    /* queue is empty */
+    if (queue->head == NULL)
+    {
+        queue->head = item;
+        queue->tail = item;
+        _item->next = NULL;
+        _item->prev = NULL;
+    }
+    else
+    {
+        if(((item_t *)(queue->head))->priority < _item->priority)
+        {
+            _item->next = queue->head;
+            _item->prev = NULL;
+            ((item_t *)(queue->head))->prev = item;
+            queue->head = item;
+        }
+        else
+        {
+            item_t *pos = queue->head;
+            while(pos->next != NULL && ((item_t *)(pos->next))->priority >= _item->priority)
+                pos = pos->next;    
+            if(pos->next == NULL)
+                queue->tail = item;
+            _item->next = pos->next;
+            _item->prev = pos;
+            pos->next = item;
+        }
+    }
+}
+
+
 void *queue_dequeue(queue_t *queue)
 {
     item_t *temp = (item_t *)queue->head;

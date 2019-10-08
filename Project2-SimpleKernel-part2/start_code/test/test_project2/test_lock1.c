@@ -38,7 +38,7 @@ void lock_task1(void)
                 vt100_move_cursor(1, print_location);
                 printk("> [TASK] Applying for a lock.\n");
 
-                do_scheduler();
+                //do_scheduler();
 
 #ifdef SPIN_LOCK
                 spin_lock_acquire(&spin_lock);
@@ -68,7 +68,7 @@ void lock_task1(void)
 #ifdef MUTEX_LOCK
                 do_mutex_lock_release(&mutex_lock);
 #endif
-                do_scheduler();
+                //do_scheduler();
         }
 }
 
@@ -97,7 +97,7 @@ void lock_task2(void)
                 vt100_move_cursor(1, print_location);
                 printk("> [TASK] Applying for a lock.\n");
 
-                do_scheduler();
+                //do_scheduler();
 
 #ifdef SPIN_LOCK
                 spin_lock_acquire(&spin_lock);
@@ -127,6 +127,6 @@ void lock_task2(void)
 #ifdef MUTEX_LOCK
                 do_mutex_lock_release(&mutex_lock);
 #endif
-                do_scheduler();
+                //do_scheduler();
         }
 }
