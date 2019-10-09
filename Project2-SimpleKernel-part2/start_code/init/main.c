@@ -51,37 +51,37 @@ static void init_pcb()
 	queue_init(&block_queue);
 	queue_init(&sleep_queue);
 
-	for(i=0;i<num_sched1_tasks;i++,queue_id++){
-		for(j=0;j<32;j++){
-			pcb[queue_id].kernel_context.regs[j]=0;
-			pcb[queue_id].user_context.regs[j]=0;
-		}
-		pcb[queue_id].pid=process_id++;
-		pcb[queue_id].type=sched1_tasks[i]->type;
-		pcb[queue_id].status=TASK_READY;
+	// for(i=0;i<num_sched1_tasks;i++,queue_id++){
+	// 	for(j=0;j<32;j++){
+	// 		pcb[queue_id].kernel_context.regs[j]=0;
+	// 		pcb[queue_id].user_context.regs[j]=0;
+	// 	}
+	// 	pcb[queue_id].pid=process_id++;
+	// 	pcb[queue_id].type=sched1_tasks[i]->type;
+	// 	pcb[queue_id].status=TASK_READY;
 
-		pcb[queue_id].kernel_stack_top=stack_top;
-		pcb[queue_id].kernel_context.regs[29]=stack_top;
-		stack_top-=STACK_SIZE;
+	// 	pcb[queue_id].kernel_stack_top=stack_top;
+	// 	pcb[queue_id].kernel_context.regs[29]=stack_top;
+	// 	stack_top-=STACK_SIZE;
 
-		//pcb[queue_id].kernel_context.regs[31]= sched1_tasks[i]->entry_point;
-		pcb[queue_id].kernel_context.regs[31]=(uint32_t) &reset_cp0;
-		pcb[queue_id].kernel_context.cp0_epc = sched1_tasks[i]->entry_point;
-		pcb[queue_id].kernel_context.cp0_status=0x10008003;
+	// 	//pcb[queue_id].kernel_context.regs[31]= sched1_tasks[i]->entry_point;
+	// 	pcb[queue_id].kernel_context.regs[31]=(uint32_t)reset_cp0;
+	// 	pcb[queue_id].kernel_context.cp0_epc = sched1_tasks[i]->entry_point;
+	// 	pcb[queue_id].kernel_context.cp0_status=0x10008003;
 
 
-		pcb[queue_id].user_stack_top=stack_top;
-		pcb[queue_id].user_context.regs[29]=stack_top;
-		stack_top-=STACK_SIZE;
+	// 	pcb[queue_id].user_stack_top=stack_top;
+	// 	pcb[queue_id].user_context.regs[29]=stack_top;
+	// 	stack_top-=STACK_SIZE;
 
-		//pcb[queue_id].user_context.regs[31]=sched1_tasks[i]->entry_point;
-		pcb[queue_id].user_context.cp0_epc=sched1_tasks[i]->entry_point;
-		pcb[queue_id].user_context.cp0_status=0x10008003;
+	// 	//pcb[queue_id].user_context.regs[31]=sched1_tasks[i]->entry_point;
+	// 	pcb[queue_id].user_context.cp0_epc=sched1_tasks[i]->entry_point;
+	// 	pcb[queue_id].user_context.cp0_status=0x10008003;
 
-		pcb[queue_id].priority=sched1_tasks[i]->task_priority;
-		pcb[queue_id].task_priority=sched1_tasks[i]->task_priority;
-		priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
-	}
+	// 	pcb[queue_id].priority=sched1_tasks[i]->task_priority;
+	// 	pcb[queue_id].task_priority=sched1_tasks[i]->task_priority;
+	// 	priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
+	// }
 
 	// for(i=0;i<num_lock_tasks;i++,queue_id++){
 	// 	for(j=0;j<32;j++){
@@ -98,7 +98,7 @@ static void init_pcb()
 	// 	stack_top-=STACK_SIZE;
 
 	// 	//pcb[queue_id].kernel_context.regs[31]= lock_tasks[i]->entry_point;
-	// 	pcb[queue_id].kernel_context.regs[31]= (uint32_t)&reset_cp0;
+	// 	pcb[queue_id].kernel_context.regs[31]= (uint32_t)reset_cp0;
 	// 	pcb[queue_id].kernel_context.cp0_epc = lock_tasks[i]->entry_point;
 	// 	pcb[queue_id].kernel_context.cp0_status=0x10008003;
 
@@ -114,6 +114,70 @@ static void init_pcb()
 	// 	pcb[queue_id].task_priority=lock_tasks[i]->task_priority;
 	// 	priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
 	// }
+
+	for(i=0;i<num_timer_tasks;i++,queue_id++){
+		for(j=0;j<32;j++){
+			pcb[queue_id].kernel_context.regs[j]=0;
+			pcb[queue_id].user_context.regs[j]=0;
+		}
+		pcb[queue_id].pid=process_id++;
+		pcb[queue_id].type=timer_tasks[i]->type;
+		pcb[queue_id].status=TASK_READY;
+
+		pcb[queue_id].kernel_stack_top=stack_top;
+		pcb[queue_id].kernel_context.regs[29]=stack_top;
+
+		stack_top-=STACK_SIZE;
+
+		//pcb[queue_id].kernel_context.regs[31]= timer_tasks[i]->entry_point;
+		pcb[queue_id].kernel_context.regs[31]= (uint32_t)reset_cp0;
+		pcb[queue_id].kernel_context.cp0_epc = timer_tasks[i]->entry_point;
+		pcb[queue_id].kernel_context.cp0_status=0x10008003;
+
+		pcb[queue_id].user_stack_top=stack_top;
+		pcb[queue_id].user_context.regs[29]=stack_top;
+		stack_top-=STACK_SIZE;
+
+		pcb[queue_id].user_context.regs[31]=timer_tasks[i]->entry_point;
+		pcb[queue_id].user_context.cp0_epc=timer_tasks[i]->entry_point;
+		pcb[queue_id].user_context.cp0_status=0x10008003;
+
+		pcb[queue_id].priority=timer_tasks[i]->task_priority;
+		pcb[queue_id].task_priority=timer_tasks[i]->task_priority;
+		priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
+	}
+
+	for(i=0;i<num_sched2_tasks;i++,queue_id++){
+		for(j=0;j<32;j++){
+			pcb[queue_id].kernel_context.regs[j]=0;
+			pcb[queue_id].user_context.regs[j]=0;
+		}
+		pcb[queue_id].pid=process_id++;
+		pcb[queue_id].type=sched2_tasks[i]->type;
+		pcb[queue_id].status=TASK_READY;
+
+		pcb[queue_id].kernel_stack_top=stack_top;
+		pcb[queue_id].kernel_context.regs[29]=stack_top;
+
+		stack_top-=STACK_SIZE;
+
+		//pcb[queue_id].kernel_context.regs[31]= sched2_tasks[i]->entry_point;
+		pcb[queue_id].kernel_context.regs[31]= (uint32_t)reset_cp0;
+		pcb[queue_id].kernel_context.cp0_epc = sched2_tasks[i]->entry_point;
+		pcb[queue_id].kernel_context.cp0_status=0x10008003;
+
+		pcb[queue_id].user_stack_top=stack_top;
+		pcb[queue_id].user_context.regs[29]=stack_top;
+		stack_top-=STACK_SIZE;
+
+		pcb[queue_id].user_context.regs[31]=sched2_tasks[i]->entry_point;
+		pcb[queue_id].user_context.cp0_epc=sched2_tasks[i]->entry_point;
+		pcb[queue_id].user_context.cp0_status=0x10008003;
+
+		pcb[queue_id].priority=sched2_tasks[i]->task_priority;
+		pcb[queue_id].task_priority=sched2_tasks[i]->task_priority;
+		priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
+	}
 
 
 	 current_running=&pcb[0];
@@ -137,14 +201,12 @@ static void init_exception()
 
 	// 2. Disable all interrupt
 	initial_cp0_status |= 0x10008001;
-	initial_cp0_status ^=0x1;
+	initial_cp0_status &= 0xfffffffe;
 	SET_CP0_STATUS(initial_cp0_status);
 	initial_cp0_status|= 0x1;
 	
 	// 3. Copy the level 2 exception handling code to 0x80000180
-	bzero((void *)BEV0_EBASE, BEV0_OFFSET);
 	memcpy((void *)(BEV0_EBASE+BEV0_OFFSET), exception_handler_entry, exception_handler_end-exception_handler_begin);
-	bzero((void *)BEV1_EBASE, BEV1_OFFSET);
 	memcpy((void *)(BEV1_EBASE+BEV1_OFFSET), exception_handler_entry, exception_handler_end-exception_handler_begin);
 
 	// 4. reset CP0_COMPARE & CP0_COUNT register
@@ -156,6 +218,20 @@ static void init_exception()
 
 static void init_syscall(void)
 {
+	int i;
+	for(i = 0; i < NUM_SYSCALLS; i++)
+		syscall[i] = (int (*)())0;
+	syscall[SYSCALL_SLEEP] = (int (*)())&do_sleep;
+	syscall[SYSCALL_BLOCK] = (int (*)())&do_block;
+	syscall[SYSCALL_UNBLOCK_ONE] = (int (*)())&do_unblock_one;
+	syscall[SYSCALL_UNBLOCK_ALL] = (int (*)())&do_unblock_all;
+	syscall[SYSCALL_WRITE] = (int (*)())&screen_write;
+	syscall[SYSCALL_CURSOR] = (int (*)())&screen_move_cursor;
+	syscall[SYSCALL_REFLUSH] = (int (*)())&screen_reflush;
+	syscall[SYSCALL_MUTEX_LOCK_INIT] = (int (*)())&do_mutex_lock_init;
+	syscall[SYSCALL_MUTEX_LOCK_ACQUIRE] = (int (*)())&do_mutex_lock_acquire;
+	syscall[SYSCALL_MUTEX_LOCK_RELEASE] = (int (*)())&do_mutex_lock_release;
+
 
 	// init system call table.
 }

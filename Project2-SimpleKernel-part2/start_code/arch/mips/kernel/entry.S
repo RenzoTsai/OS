@@ -206,7 +206,7 @@ NESTED(handle_int, 0, sp)
     addi sp, sp, 8
 reset_cp0:
     mtc0    zero, CP0_COUNT
-    li      k0, 0x150000
+    li      k0, 150000
     mtc0    k0, CP0_COMPARE
 
     RESTORE_CONTEXT(USER)
@@ -225,7 +225,6 @@ NESTED(handle_syscall, 0, sp)
     addiu   sp, sp, -16
     jal     system_call_helper
     addiu   sp, sp, 16
-
     RESTORE_CONTEXT(USER)
     STI
     eret

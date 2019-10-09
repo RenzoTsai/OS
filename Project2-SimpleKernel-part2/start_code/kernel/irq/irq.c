@@ -13,6 +13,8 @@ static void irq_timer()
     do_scheduler();
     screen_cursor_x = current_running->cursor_x;
     screen_cursor_y = current_running->cursor_y;
+    
+    //screen_reflush();
     // TODO clock interrupt handler.
     // scheduler, time counter in here to do, emmmmmm maybe.
 }

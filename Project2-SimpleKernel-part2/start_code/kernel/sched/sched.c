@@ -52,7 +52,7 @@ void scheduler(void)
     pcb_t *p;
 
     //check_sleeping();
-    if(current_running->status != TASK_BLOCKED &&!(queue_is_empty(&ready_queue))){
+    if(current_running->status != TASK_BLOCKED ){
         current_running->status = TASK_READY;
         if(current_running->pid != 1){
             priority_queue_push(&ready_queue, current_running);
@@ -83,9 +83,8 @@ void do_sleep(uint32_t sleep_time)
 void do_block(queue_t *queue)
 {
 	current_running->status=TASK_BLOCKED;
-	priority_queue_push(queue,(void*)current_running);
+	queue_push(queue,(void*)current_running);
 	do_scheduler();
-	//printk("block");
     // block the current_running task into the queue
 }
 
