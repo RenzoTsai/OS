@@ -7,7 +7,7 @@
 .macro STI
     mfc0 k0,CP0_STATUS
     ori  k0, STATUS_IE 
-    mtc0 CP0_STATUS,k0
+    mtc0 k0,CP0_STATUS
 .endm
 
 #close interrupt
@@ -120,8 +120,8 @@ END(SET_CP0_COMPARE)
 .endm
 
 .macro RESTORE_CONTEXT offset
-    addi k0,k0,\offset
     lw k0,current_running
+    addi k0,k0,\offset
     lw zero,OFFSET_REG0(k0)
     lw AT,OFFSET_REG1(k0)
     lw v0,OFFSET_REG2(k0)
@@ -178,6 +178,7 @@ END(do_scheduler)
 
 .global exception_handler_begin
 .global exception_handler_end
+.global reset_cp0
 
 NESTED(exception_handler_entry, 0, sp)   
 exception_handler_begin:
@@ -189,9 +190,7 @@ exception_handler_begin:
     add  k0,k0,k1
     lw   k0, 0(k0)
     jr   k0
-    RESTORE_CONTEXT(USER)
-    STI
-    eret
+    
 
     // TODO close interrupt
     // jmp exception_handler[i] which decided by CP0_CAUSE
@@ -205,16 +204,39 @@ NESTED(handle_int, 0, sp)
     addi sp, sp, -8
     jal  interrupt_helper
     addi sp, sp, 8
+reset_cp0:
+    mtc0    zero, CP0_COUNT
+    li      k0, 0x150000
+    mtc0    k0, CP0_COMPARE
+
+    RESTORE_CONTEXT(USER)
+    STI
+    eret
 
     // interrupt handler
     // Leve3 exception Handler.
 END(handle_int)
 
 NESTED(handle_syscall, 0, sp)
+    move     a3, a2
+    move     a2, a1
+    move     a1, a0
+    move     a0, v0
+    addiu   sp, sp, -16
+    jal     system_call_helper
+    addiu   sp, sp, 16
+
+    RESTORE_CONTEXT(USER)
+    STI
+    eret
+    
     // system call handler
 END(handle_syscall)
 
 NESTED(handle_other, 0, sp)
+    RESTORE_CONTEXT(USER)
+    STI
+    eret
     // other exception handler
 END(handle_other)
 

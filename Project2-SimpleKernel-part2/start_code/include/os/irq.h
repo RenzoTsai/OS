@@ -62,7 +62,7 @@ enum ExcCode
 #define BEV1_EBASE 0xbfc00000
 #define BEV1_OFFSET 0x380
 
-#define TIMER_INTERVAL 150000
+#define TIMER_INTERVAL 0x150000
 
 void interrupt_helper(uint32_t, uint32_t);
 
@@ -70,6 +70,7 @@ void interrupt_helper(uint32_t, uint32_t);
 extern void exception_handler_entry(void);
 extern void exception_handler_begin(void);
 extern void exception_handler_end(void);
+extern void reset_cp0(void);
 
 extern void handle_int(void);
 extern void handle_syscall(void);

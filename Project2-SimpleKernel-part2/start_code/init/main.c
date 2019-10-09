@@ -34,6 +34,7 @@
 
 queue_t ready_queue;
 queue_t block_queue;
+queue_t sleep_queue;
 uint32_t initial_cp0_status;
 uint32_t queue_id;
 uint32_t exception_handler[32];
@@ -48,6 +49,8 @@ static void init_pcb()
 	
 	queue_init(&ready_queue);
 	queue_init(&block_queue);
+	queue_init(&sleep_queue);
+
 	for(i=0;i<num_sched1_tasks;i++,queue_id++){
 		for(j=0;j<32;j++){
 			pcb[queue_id].kernel_context.regs[j]=0;
@@ -61,48 +64,56 @@ static void init_pcb()
 		pcb[queue_id].kernel_context.regs[29]=stack_top;
 		stack_top-=STACK_SIZE;
 
-		pcb[queue_id].kernel_context.regs[31]= sched1_tasks[i]->entry_point;
+		//pcb[queue_id].kernel_context.regs[31]= sched1_tasks[i]->entry_point;
+		pcb[queue_id].kernel_context.regs[31]=(uint32_t) &reset_cp0;
 		pcb[queue_id].kernel_context.cp0_epc = sched1_tasks[i]->entry_point;
-		pcb[queue_id].kernel_context.cp0_status=0x30008001;
+		pcb[queue_id].kernel_context.cp0_status=0x10008003;
 
 
 		pcb[queue_id].user_stack_top=stack_top;
 		pcb[queue_id].user_context.regs[29]=stack_top;
 		stack_top-=STACK_SIZE;
 
-		pcb[queue_id].user_context.regs[31]=sched1_tasks[i]->entry_point;
+		//pcb[queue_id].user_context.regs[31]=sched1_tasks[i]->entry_point;
 		pcb[queue_id].user_context.cp0_epc=sched1_tasks[i]->entry_point;
-		pcb[queue_id].user_context.cp0_status=0x30008001;
-		queue_push(&ready_queue,(void *)&pcb[queue_id]);
+		pcb[queue_id].user_context.cp0_status=0x10008003;
+
+		pcb[queue_id].priority=sched1_tasks[i]->task_priority;
+		pcb[queue_id].task_priority=sched1_tasks[i]->task_priority;
+		priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
 	}
 
-	for(i=0;i<num_sched2_tasks;i++,queue_id++){
-		for(j=0;j<32;j++){
-			pcb[queue_id].kernel_context.regs[j]=0;
-			pcb[queue_id].user_context.regs[j]=0;
-		}
-		pcb[queue_id].pid=process_id++;
-		pcb[queue_id].type=sched2_tasks[i]->type;
-		pcb[queue_id].status=TASK_READY;
+	// for(i=0;i<num_lock_tasks;i++,queue_id++){
+	// 	for(j=0;j<32;j++){
+	// 		pcb[queue_id].kernel_context.regs[j]=0;
+	// 		pcb[queue_id].user_context.regs[j]=0;
+	// 	}
+	// 	pcb[queue_id].pid=process_id++;
+	// 	pcb[queue_id].type=lock_tasks[i]->type;
+	// 	pcb[queue_id].status=TASK_READY;
 
-		pcb[queue_id].kernel_stack_top=stack_top;
-		pcb[queue_id].kernel_context.regs[29]=stack_top;
+	// 	pcb[queue_id].kernel_stack_top=stack_top;
+	// 	pcb[queue_id].kernel_context.regs[29]=stack_top;
 
-		stack_top-=STACK_SIZE;
+	// 	stack_top-=STACK_SIZE;
 
-		pcb[queue_id].kernel_context.regs[31]= sched2_tasks[i]->entry_point;
-		pcb[queue_id].kernel_context.cp0_epc = sched2_tasks[i]->entry_point;
-		pcb[queue_id].kernel_context.cp0_status=0x30008001;
+	// 	//pcb[queue_id].kernel_context.regs[31]= lock_tasks[i]->entry_point;
+	// 	pcb[queue_id].kernel_context.regs[31]= (uint32_t)&reset_cp0;
+	// 	pcb[queue_id].kernel_context.cp0_epc = lock_tasks[i]->entry_point;
+	// 	pcb[queue_id].kernel_context.cp0_status=0x10008003;
 
-		pcb[queue_id].user_stack_top=stack_top;
-		pcb[queue_id].user_context.regs[29]=stack_top;
-		stack_top-=STACK_SIZE;
+	// 	pcb[queue_id].user_stack_top=stack_top;
+	// 	pcb[queue_id].user_context.regs[29]=stack_top;
+	// 	stack_top-=STACK_SIZE;
 
-		pcb[queue_id].user_context.regs[31]=sched2_tasks[i]->entry_point;
-		pcb[queue_id].user_context.cp0_epc=sched2_tasks[i]->entry_point;
-		pcb[queue_id].user_context.cp0_status=0x30008001;
-		queue_push(&ready_queue,(void *)&pcb[queue_id]);
-	}
+	// 	pcb[queue_id].user_context.regs[31]=lock_tasks[i]->entry_point;
+	// 	pcb[queue_id].user_context.cp0_epc=lock_tasks[i]->entry_point;
+	// 	pcb[queue_id].user_context.cp0_status=0x10008003;
+
+	// 	pcb[queue_id].priority=lock_tasks[i]->task_priority;
+	// 	pcb[queue_id].task_priority=lock_tasks[i]->task_priority;
+	// 	priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
+	// }
 
 
 	 current_running=&pcb[0];
@@ -112,10 +123,10 @@ static void init_exception_handler()
 {
 	int i;
 	//copy handle function to exception_handler
-	exception_handler[0]=&handle_int;
+	exception_handler[0] = (uint32_t)handle_int;
 	for(i=1;i<32;i++)
-		exception_handler[i]=&handle_other;
-	exception_handler[8]=&handle_syscall;
+		exception_handler[i] = (uint32_t)handle_other;
+	exception_handler[8] = (uint32_t)handle_syscall;
 }
 
 static void init_exception()
@@ -125,20 +136,21 @@ static void init_exception()
 	initial_cp0_status = GET_CP0_STATUS();
 
 	// 2. Disable all interrupt
-	initial_cp0_status = 0x30008001;
-	initial_cp0_status &=0xfffffffe;
+	initial_cp0_status |= 0x10008001;
+	initial_cp0_status ^=0x1;
 	SET_CP0_STATUS(initial_cp0_status);
 	initial_cp0_status|= 0x1;
 	
 	// 3. Copy the level 2 exception handling code to 0x80000180
-	//bzero((void *)BEV0_EBASE, BEV0_OFFSET);
-	memcpy((void *)(BEV0_EBASE+BEV0_OFFSET), &exception_handler_entry, exception_handler_end-exception_handler_begin);
-	//bzero((void *)BEV1_EBASE, BEV1_OFFSET);
-	memcpy((void *)(BEV1_EBASE+BEV1_OFFSET), &exception_handler_entry, exception_handler_end-exception_handler_begin);
+	bzero((void *)BEV0_EBASE, BEV0_OFFSET);
+	memcpy((void *)(BEV0_EBASE+BEV0_OFFSET), exception_handler_entry, exception_handler_end-exception_handler_begin);
+	bzero((void *)BEV1_EBASE, BEV1_OFFSET);
+	memcpy((void *)(BEV1_EBASE+BEV1_OFFSET), exception_handler_entry, exception_handler_end-exception_handler_begin);
 
 	// 4. reset CP0_COMPARE & CP0_COUNT register
-	SET_CP0_COMPARE(TIMER_INTERVAL);
 	SET_CP0_COUNT(0);
+	SET_CP0_COMPARE(TIMER_INTERVAL);
+	
 	
 }
 
@@ -180,7 +192,7 @@ void __attribute__((section(".entry_function"))) _start(void)
 	{
 		// (QAQQQQQQQQQQQ)
 		// If you do non-preemptive scheduling, you need to use it to surrender control
-		 // do_scheduler();
+		  //do_scheduler();
 	};
 	return;
 }

@@ -52,7 +52,7 @@ void lock_task1(void)
                 {
                         vt100_move_cursor(1, print_location);
                         printk("> [TASK] Has acquired lock and running.(%d)\n", i);
-                        do_scheduler();
+                        //do_scheduler();
                 }
 
                 vt100_move_cursor(1, print_location);
@@ -111,7 +111,7 @@ void lock_task2(void)
                 {
                         vt100_move_cursor(1, print_location);
                         printk("> [TASK] Has acquired lock and running.(%d)\n", i);
-                        do_scheduler();
+                        //do_scheduler();
                 }
 
                 vt100_move_cursor(1, print_location);

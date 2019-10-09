@@ -7,7 +7,7 @@
 static void irq_timer()
 {
 	screen_reflush();
-	time_elapsed += 0x3000;
+	time_elapsed += TIMER_INTERVAL;
 	current_running->cursor_x = screen_cursor_x;
     current_running->cursor_y = screen_cursor_y;
     do_scheduler();
@@ -19,7 +19,7 @@ static void irq_timer()
 
 void other_exception_handler()
 {
-	time_elapsed += 0x3000;
+	time_elapsed += TIMER_INTERVAL;
 
     // TODO other exception handler
 }
