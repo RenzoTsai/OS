@@ -13,8 +13,9 @@
 #close interrupt
 .macro CLI
     mfc0 k0,CP0_STATUS
-    li   k1,0xfffffffe
-    and  k0,k0,k1
+    # li   k1,0xfffffffe
+    # and  k0,k0,k1
+    ori  k0, 0x3 
     mtc0 k0,CP0_STATUS
 .endm
 

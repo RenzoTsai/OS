@@ -8,7 +8,7 @@ static char blank[] = {"                                                "};
 void sleep_task(void)
 {
     int i;
-    int print_location = 1;
+    int print_location = 5;
     int sleep_time = 5;
 
     while (1)

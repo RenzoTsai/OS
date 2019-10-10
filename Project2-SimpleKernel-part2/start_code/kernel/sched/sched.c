@@ -49,9 +49,9 @@ static void check_sleeping()
 
 void scheduler(void)
 {
-    pcb_t *p;
+    pcb_t *position;
 
-    //check_sleeping();
+    check_sleeping();
     if(current_running->status != TASK_BLOCKED ){
         current_running->status = TASK_READY;
         if(current_running->pid != 1){
@@ -62,10 +62,10 @@ void scheduler(void)
     current_running->priority = current_running->task_priority;
     current_running->status = TASK_RUNNING;
 
-    p = (pcb_t *)ready_queue.head;
-    while(p != NULL){
-        p->priority ++;
-        p = p->next;
+    position = (pcb_t *)ready_queue.head;
+    while(position != NULL){
+        position->priority ++;
+        position = position->next;
     }
 }
 

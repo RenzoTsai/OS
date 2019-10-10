@@ -51,70 +51,6 @@ static void init_pcb()
 	queue_init(&block_queue);
 	queue_init(&sleep_queue);
 
-	// for(i=0;i<num_sched1_tasks;i++,queue_id++){
-	// 	for(j=0;j<32;j++){
-	// 		pcb[queue_id].kernel_context.regs[j]=0;
-	// 		pcb[queue_id].user_context.regs[j]=0;
-	// 	}
-	// 	pcb[queue_id].pid=process_id++;
-	// 	pcb[queue_id].type=sched1_tasks[i]->type;
-	// 	pcb[queue_id].status=TASK_READY;
-
-	// 	pcb[queue_id].kernel_stack_top=stack_top;
-	// 	pcb[queue_id].kernel_context.regs[29]=stack_top;
-	// 	stack_top-=STACK_SIZE;
-
-	// 	//pcb[queue_id].kernel_context.regs[31]= sched1_tasks[i]->entry_point;
-	// 	pcb[queue_id].kernel_context.regs[31]=(uint32_t)reset_cp0;
-	// 	pcb[queue_id].kernel_context.cp0_epc = sched1_tasks[i]->entry_point;
-	// 	pcb[queue_id].kernel_context.cp0_status=0x10008003;
-
-
-	// 	pcb[queue_id].user_stack_top=stack_top;
-	// 	pcb[queue_id].user_context.regs[29]=stack_top;
-	// 	stack_top-=STACK_SIZE;
-
-	// 	//pcb[queue_id].user_context.regs[31]=sched1_tasks[i]->entry_point;
-	// 	pcb[queue_id].user_context.cp0_epc=sched1_tasks[i]->entry_point;
-	// 	pcb[queue_id].user_context.cp0_status=0x10008003;
-
-	// 	pcb[queue_id].priority=sched1_tasks[i]->task_priority;
-	// 	pcb[queue_id].task_priority=sched1_tasks[i]->task_priority;
-	// 	priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
-	// }
-
-	// for(i=0;i<num_lock_tasks;i++,queue_id++){
-	// 	for(j=0;j<32;j++){
-	// 		pcb[queue_id].kernel_context.regs[j]=0;
-	// 		pcb[queue_id].user_context.regs[j]=0;
-	// 	}
-	// 	pcb[queue_id].pid=process_id++;
-	// 	pcb[queue_id].type=lock_tasks[i]->type;
-	// 	pcb[queue_id].status=TASK_READY;
-
-	// 	pcb[queue_id].kernel_stack_top=stack_top;
-	// 	pcb[queue_id].kernel_context.regs[29]=stack_top;
-
-	// 	stack_top-=STACK_SIZE;
-
-	// 	//pcb[queue_id].kernel_context.regs[31]= lock_tasks[i]->entry_point;
-	// 	pcb[queue_id].kernel_context.regs[31]= (uint32_t)reset_cp0;
-	// 	pcb[queue_id].kernel_context.cp0_epc = lock_tasks[i]->entry_point;
-	// 	pcb[queue_id].kernel_context.cp0_status=0x10008003;
-
-	// 	pcb[queue_id].user_stack_top=stack_top;
-	// 	pcb[queue_id].user_context.regs[29]=stack_top;
-	// 	stack_top-=STACK_SIZE;
-
-	// 	pcb[queue_id].user_context.regs[31]=lock_tasks[i]->entry_point;
-	// 	pcb[queue_id].user_context.cp0_epc=lock_tasks[i]->entry_point;
-	// 	pcb[queue_id].user_context.cp0_status=0x10008003;
-
-	// 	pcb[queue_id].priority=lock_tasks[i]->task_priority;
-	// 	pcb[queue_id].task_priority=lock_tasks[i]->task_priority;
-	// 	priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
-	// }
-
 	for(i=0;i<num_timer_tasks;i++,queue_id++){
 		for(j=0;j<32;j++){
 			pcb[queue_id].kernel_context.regs[j]=0;
@@ -129,7 +65,6 @@ static void init_pcb()
 
 		stack_top-=STACK_SIZE;
 
-		//pcb[queue_id].kernel_context.regs[31]= timer_tasks[i]->entry_point;
 		pcb[queue_id].kernel_context.regs[31]= (uint32_t)reset_cp0;
 		pcb[queue_id].kernel_context.cp0_epc = timer_tasks[i]->entry_point;
 		pcb[queue_id].kernel_context.cp0_status=0x10008003;
@@ -144,6 +79,8 @@ static void init_pcb()
 
 		pcb[queue_id].priority=timer_tasks[i]->task_priority;
 		pcb[queue_id].task_priority=timer_tasks[i]->task_priority;
+		pcb[queue_id].sleep_time=0;
+		pcb[queue_id].begin_sleep_time=0;
 		priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
 	}
 
@@ -161,7 +98,6 @@ static void init_pcb()
 
 		stack_top-=STACK_SIZE;
 
-		//pcb[queue_id].kernel_context.regs[31]= sched2_tasks[i]->entry_point;
 		pcb[queue_id].kernel_context.regs[31]= (uint32_t)reset_cp0;
 		pcb[queue_id].kernel_context.cp0_epc = sched2_tasks[i]->entry_point;
 		pcb[queue_id].kernel_context.cp0_status=0x10008003;
@@ -176,6 +112,8 @@ static void init_pcb()
 
 		pcb[queue_id].priority=sched2_tasks[i]->task_priority;
 		pcb[queue_id].task_priority=sched2_tasks[i]->task_priority;
+		pcb[queue_id].sleep_time=0;
+		pcb[queue_id].begin_sleep_time=0;
 		priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
 	}
 
@@ -200,10 +138,11 @@ static void init_exception()
 	initial_cp0_status = GET_CP0_STATUS();
 
 	// 2. Disable all interrupt
-	initial_cp0_status |= 0x10008001;
-	initial_cp0_status &= 0xfffffffe;
+	initial_cp0_status |= 0x10008003;
 	SET_CP0_STATUS(initial_cp0_status);
-	initial_cp0_status|= 0x1;
+	//SET INTERRUPT ENABLE FOR FUTURE USING
+	initial_cp0_status = 0x10008001;
+	
 	
 	// 3. Copy the level 2 exception handling code to 0x80000180
 	memcpy((void *)(BEV0_EBASE+BEV0_OFFSET), exception_handler_entry, exception_handler_end-exception_handler_begin);
