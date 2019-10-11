@@ -31,6 +31,7 @@
 #include "screen.h"
 #include "common.h"
 #include "syscall.h"
+#include "time.h"
 
 queue_t ready_queue;
 queue_t block_queue;
@@ -200,6 +201,9 @@ void __attribute__((section(".entry_function"))) _start(void)
 	init_screen();
 	printk("> [INIT] SCREEN initialization succeeded.\n");
 
+	//init time
+	time_elapsed = 0;
+	
 	// TODO Enable interrupt
 	SET_CP0_STATUS(initial_cp0_status);
 	
