@@ -190,8 +190,8 @@ a080049c:	00000000 	nop
 
 a08004a0 <exception_handler_entry>:
 a08004a0:	401a6000 	mfc0	k0,c0_sr
-a08004a4:	00000000 	nop
-a08004a8:	375a0003 	ori	k0,k0,0x3
+a08004a4:	241bfffe 	li	k1,-2
+a08004a8:	035bd024 	and	k0,k0,k1
 a08004ac:	409a6000 	mtc0	k0,c0_sr
 a08004b0:	3c1aa080 	lui	k0,0xa080
 a08004b4:	8f5a4738 	lw	k0,18232(k0)
