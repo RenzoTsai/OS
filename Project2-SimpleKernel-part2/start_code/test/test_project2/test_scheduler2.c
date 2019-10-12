@@ -12,7 +12,7 @@ static char plane4[] = {"|  o'o              "};
 void printf_task1(void)
 {
     int i;
-    int print_location = 2;
+    int print_location = 1;
 
     for (i = 0;; i++)
     {
@@ -24,7 +24,7 @@ void printf_task1(void)
 void printf_task2(void)
 {
     int i;
-    int print_location = 3;
+    int print_location = 2;
 
     for (i = 0;; i++)
     {

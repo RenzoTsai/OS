@@ -85,6 +85,39 @@ static void init_pcb()
 		priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
 	}
 
+	for(i=0;i<num_lock_tasks;i++,queue_id++){
+		for(j=0;j<32;j++){
+			pcb[queue_id].kernel_context.regs[j]=0;
+			pcb[queue_id].user_context.regs[j]=0;
+		}
+		pcb[queue_id].pid=process_id++;
+		pcb[queue_id].type=lock_tasks[i]->type;
+		pcb[queue_id].status=TASK_READY;
+
+		pcb[queue_id].kernel_stack_top=stack_top;
+		pcb[queue_id].kernel_context.regs[29]=stack_top;
+
+		stack_top-=STACK_SIZE;
+
+		pcb[queue_id].kernel_context.regs[31]= (uint32_t)reset_cp0;
+		pcb[queue_id].kernel_context.cp0_epc = lock_tasks[i]->entry_point;
+		pcb[queue_id].kernel_context.cp0_status=0x10008003;
+
+		pcb[queue_id].user_stack_top=stack_top;
+		pcb[queue_id].user_context.regs[29]=stack_top;
+		stack_top-=STACK_SIZE;
+
+		pcb[queue_id].user_context.regs[31]=lock_tasks[i]->entry_point;
+		pcb[queue_id].user_context.cp0_epc=lock_tasks[i]->entry_point;
+		pcb[queue_id].user_context.cp0_status=0x10008003;
+
+		pcb[queue_id].priority=lock_tasks[i]->task_priority;
+		pcb[queue_id].task_priority=lock_tasks[i]->task_priority;
+		pcb[queue_id].sleep_time=0;
+		pcb[queue_id].begin_sleep_time=0;
+		priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
+	}
+
 	for(i=0;i<num_sched2_tasks;i++,queue_id++){
 		for(j=0;j<32;j++){
 			pcb[queue_id].kernel_context.regs[j]=0;
@@ -201,11 +234,13 @@ void __attribute__((section(".entry_function"))) _start(void)
 	init_screen();
 	printk("> [INIT] SCREEN initialization succeeded.\n");
 
-	//init time
-	time_elapsed = 0;
+	
 	
 	// TODO Enable interrupt
 	SET_CP0_STATUS(initial_cp0_status);
+
+	//init time
+	time_elapsed = 0;
 	
 	while (1)
 	{

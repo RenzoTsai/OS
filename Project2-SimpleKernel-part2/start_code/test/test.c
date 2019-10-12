@@ -12,8 +12,8 @@ int num_sched1_tasks = 3;
 /* [TASK2] task group to test lock */
 // test_lock1.c : Kernel space lock test
 // test_lock2.c : User space lock test
-struct task_info task2_4 = {(uint32_t)&lock_task1, KERNEL_THREAD,20};
-struct task_info task2_5 = {(uint32_t)&lock_task2, KERNEL_THREAD,20};
+struct task_info task2_4 = {(uint32_t)&lock_task1, KERNEL_THREAD,10};
+struct task_info task2_5 = {(uint32_t)&lock_task2, KERNEL_THREAD,10};
 struct task_info *lock_tasks[16] = {&task2_4, &task2_5};
 int num_lock_tasks = 2;
 
