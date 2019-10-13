@@ -52,7 +52,7 @@ void init_screen(void)
 {
     vt100_hidden_cursor();
     vt100_clear();
-    screen_clear();
+    
 }
 
 void screen_clear(void)

@@ -35,7 +35,7 @@ void printf_task2(void)
 
 void drawing_task2(void)
 {
-    int i, j = 22;
+    int i, j = 20;
 
     while (1)
     {
