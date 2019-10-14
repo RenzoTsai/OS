@@ -7,7 +7,7 @@
 void timer_task(void)
 {
     int count = 0;
-    int print_location = 6;
+    int print_location = 7;
 
     while (1)
     {
