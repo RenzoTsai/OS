@@ -99,9 +99,9 @@ END(SET_CP0_COMPARE)
     sw sp,OFFSET_REG29(k0)
     sw fp,OFFSET_REG30(k0)
     sw ra,OFFSET_REG31(k0)
-    mfc0    k1, CP0_STATUS
-    nop
-    sw      k1, OFFSET_STATUS(k0)
+    # mfc0    k1, CP0_STATUS
+    # nop
+    # sw      k1, OFFSET_STATUS(k0)
     mfhi    k1
     sw      k1, OFFSET_HI(k0)
     mflo    k1
@@ -109,9 +109,9 @@ END(SET_CP0_COMPARE)
     mfc0    k1, CP0_BADVADDR
     nop
     sw      k1, OFFSET_BADVADDR(k0)
-    mfc0    k1, CP0_CAUSE
-    nop
-    sw      k1, OFFSET_CAUSE(k0)
+    # mfc0    k1, CP0_CAUSE
+    # nop
+    # sw      k1, OFFSET_CAUSE(k0)
     mfc0    k1, CP0_EPC
     nop
     sw      k1, OFFSET_EPC(k0)
@@ -155,16 +155,16 @@ END(SET_CP0_COMPARE)
     lw sp,OFFSET_REG29(k0)
     lw fp,OFFSET_REG30(k0)
     lw ra,OFFSET_REG31(k0)
-    lw      k1, OFFSET_STATUS(k0)
-    mtc0    k1, CP0_STATUS
+    # lw      k1, OFFSET_STATUS(k0)
+    # mtc0    k1, CP0_STATUS
     lw      k1, OFFSET_HI(k0)
     mthi    k1
     lw      k1, OFFSET_LO(k0)
     mtlo    k1
     lw      k1, OFFSET_BADVADDR(k0)
     mtc0    k1, CP0_BADVADDR
-    lw      k1, OFFSET_CAUSE(k0)
-    mtc0    k1, CP0_CAUSE
+    # lw      k1, OFFSET_CAUSE(k0)
+    # mtc0    k1, CP0_CAUSE
     lw      k1, OFFSET_EPC(k0)
     mtc0    k1, CP0_EPC
     // TODO restore context
@@ -207,7 +207,7 @@ NESTED(handle_int, 0, sp)
     addi sp, sp, 8
 reset_cp0:
     mtc0    zero, CP0_COUNT
-    li      k0, 75000
+    li      k0, 150000
     mtc0    k0, CP0_COMPARE
 
     RESTORE_CONTEXT(USER)

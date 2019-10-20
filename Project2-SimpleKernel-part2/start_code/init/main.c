@@ -34,11 +34,12 @@
 #include "time.h"
 
 queue_t ready_queue;
-queue_t block_queue;
+queue_t block_queue[NUM_MAX_TASK];
 queue_t sleep_queue;
 uint32_t initial_cp0_status;
 uint32_t queue_id;
 uint32_t exception_handler[32];
+uint32_t lock_id;
 
 static void init_pcb()
 {
@@ -47,9 +48,11 @@ static void init_pcb()
 	pcb[0].status=TASK_RUNNING;
 	int stack_top=STACK_MAX;
 	queue_id=1;
+	lock_id=0;
 	
 	queue_init(&ready_queue);
-	queue_init(&block_queue);
+	for(i=0;i<NUM_MAX_TASK;i++)
+		queue_init(&block_queue[i]);
 	queue_init(&sleep_queue);
 
 	for(i=0;i<num_timer_tasks;i++,queue_id++){

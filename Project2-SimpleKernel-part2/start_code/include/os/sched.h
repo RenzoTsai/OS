@@ -116,7 +116,7 @@ typedef struct task_info
 extern queue_t ready_queue;
 
 /* block queue to wait */
-extern queue_t block_queue;
+extern queue_t block_queue[NUM_MAX_TASK];
 
 /* sleep queue to wait */
 extern queue_t sleep_queue;
@@ -128,7 +128,7 @@ extern pid_t process_id;
 extern pcb_t pcb[NUM_MAX_TASK];
 extern uint32_t initial_cp0_status;
 extern uint32_t exception_handler[32];
-
+extern uint32_t lock_id;
 void do_scheduler(void);
 void do_sleep(uint32_t);
 

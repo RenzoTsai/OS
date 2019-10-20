@@ -9,6 +9,20 @@ static char plane2[] = {"| __\\_\\______/_|  "};
 static char plane3[] = {"<[___\\_\\_______|  "};
 static char plane4[] = {"|  o'o              "};
 
+static void disable_interrupt()
+{
+    uint32_t cp0_status = GET_CP0_STATUS();
+    cp0_status &= 0xfffffffe;
+    SET_CP0_STATUS(cp0_status);
+}
+
+static void enable_interrupt()
+{
+    uint32_t cp0_status = GET_CP0_STATUS();
+    cp0_status |= 0x01;
+    SET_CP0_STATUS(cp0_status);
+}
+
 void printf_task1(void)
 {
     int i;
@@ -16,8 +30,10 @@ void printf_task1(void)
 
     for (i = 0;; i++)
     {
+        disable_interrupt();
         sys_move_cursor(1, print_location);
         printf("> [TASK] This task is to test scheduler. (%d)", i);
+        enable_interrupt();
     }
 }
 
@@ -28,8 +44,10 @@ void printf_task2(void)
 
     for (i = 0;; i++)
     {
+        disable_interrupt();
         sys_move_cursor(1, print_location);
         printf("> [TASK] This task is to test scheduler. (%d)", i);
+        enable_interrupt();
     }
 }
 
@@ -41,6 +59,7 @@ void drawing_task2(void)
     {
         for (i = 55; i > 0; i--)
         {
+            disable_interrupt();
             sys_move_cursor(i, j + 0);
             printf("%s", plane1);
 
@@ -52,8 +71,9 @@ void drawing_task2(void)
 
             sys_move_cursor(i, j + 3);
             printf("%s", plane4);
+            enable_interrupt();
         }
-
+        disable_interrupt();
         sys_move_cursor(1, j + 0);
         printf("%s", blank);
 
@@ -65,5 +85,6 @@ void drawing_task2(void)
 
         sys_move_cursor(1, j + 3);
         printf("%s", blank);
+        enable_interrupt();
     }
 }
