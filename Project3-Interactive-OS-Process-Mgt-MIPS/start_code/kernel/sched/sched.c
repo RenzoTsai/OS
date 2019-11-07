@@ -32,33 +32,19 @@ static void check_sleeping()
     }
 }
 
-// void scheduler(void)
-// {
-
-// 	if(current_running->status!=TASK_BLOCKED){
-// 		current_running->status=TASK_READY;
-// 		if(current_running->pid!=1){
-// 			queue_push(&ready_queue,current_running);
-// 		}
-// 	}
-// 	if(!queue_is_empty(&ready_queue))
-// 		current_running=(pcb_t *)queue_dequeue(&ready_queue);
-
-// 	current_running->status=TASK_RUNNING;
-// }
-
 void scheduler(void)
 {
     pcb_t *position;
-
+    pcb_t *next_running;
+    next_running =(queue_is_empty(&ready_queue))?current_running:(pcb_t *)queue_dequeue(&ready_queue);
     check_sleeping();
-    if(current_running->status != TASK_BLOCKED ){
+    if(current_running->status != TASK_BLOCKED && current_running->status != TASK_EXITED  && next_running != current_running){
         current_running->status = TASK_READY;
-        if(current_running->pid != 1){
+        if(current_running->pid != 0){
             priority_queue_push(&ready_queue, current_running);
         }
     }
-    current_running = (queue_is_empty(&ready_queue))?current_running:(pcb_t *)queue_dequeue(&ready_queue);
+    current_running = next_running;
     current_running->priority = current_running->task_priority;
     current_running->status = TASK_RUNNING;
 
@@ -82,46 +68,178 @@ void do_sleep(uint32_t sleep_time)
 
 void do_block(queue_t *queue)
 {
+    // block the current_running task into the queue
 	current_running->status=TASK_BLOCKED;
 	queue_push(queue,(void*)current_running);
 	do_scheduler();
-    // block the current_running task into the queue
+    
 }
-
-// void do_unblock_one(queue_t *queue)
-// {
-// 	pcb_t *unblocked_task;
-// 	unblocked_task=queue_dequeue(queue);
-// 	unblocked_task->status=TASK_READY;
-// 	queue_push(&ready_queue,unblocked_task);
-// 	//printk("unblock");
-//     // unblock the head task from the queue
-// }
 
 void do_unblock_one(queue_t *queue)
 {
     // unblock the head task from the queue
     pcb_t *p = (pcb_t *)(queue->head);
-    while(p != NULL)
-    {
+    while(p != NULL){
         p->priority += 1;
         p = p->next;
     }
-
     pcb_t *item = (pcb_t *)queue_dequeue(queue);
     item->status = TASK_READY;
+    item->which_queue = & ready_queue;
     priority_queue_push(&ready_queue, item);
 }
 
 
 void do_unblock_all(queue_t *queue)
 {
+    // unblock all task in the queue
 	pcb_t *unblocked_task;
 	while(!queue_is_empty(queue)){
 		unblocked_task=queue_dequeue(queue);
 		unblocked_task->status=TASK_READY;
-		queue_push(&ready_queue,unblocked_task);
+        unblocked_task->which_queue=&ready_queue;
+		priority_queue_push(&ready_queue,unblocked_task);
 	}
-
-    // unblock all task in the queue
 }
+
+int get_stack(){
+    int new_stack;
+    if(reuse_stack_top>=0)
+        new_stack = reuse_stack[reuse_stack_top--];
+    else{
+        new_stack=stack_top ;
+        stack_top-=- STACK_SIZE;
+    }
+
+    return new_stack;
+}
+
+void do_clear()
+{
+    screen_clear(SCREEN_HEIGHT / 2 +2, SCREEN_HEIGHT);
+    screen_move_cursor(0, SCREEN_HEIGHT / 2 + 1);
+}
+
+void do_ps(void){
+    pcb_t *p,*q;
+    p= ready_queue.head;
+    printk("[PROCESS TABLE]");
+    int i=0;
+    while(p!=NULL){
+        if(p->status=TASK_RUNNING){
+            printk("[%d] PID: %d STATUS: RUNNING\n",i,p->pid);
+            i++;
+        }
+        p=p->next;
+    }
+}
+
+pid_t do_getpid()
+{
+    return current_running->pid;
+}
+
+void do_spawn(task_info_t *task){
+    pcb_t *new_pcb;
+    new_pcb = (queue_is_empty(&exit_queue))? &pcb[process_id]:queue_dequeue(&exit_queue);
+    process_id++;
+    int i;
+    for(i=0;i<32;i++){
+            new_pcb->kernel_context.regs[i]=0;
+            new_pcb->user_context.regs[i]=0;
+    }
+    new_pcb->pid = ((uint32_t)new_pcb - (uint32_t)pcb)/sizeof(pcb_t);
+    new_pcb->type=task->type;
+    new_pcb->status=TASK_READY;
+
+    new_pcb->kernel_stack_top=new_pcb->kernel_context.regs[29]=get_stack();
+
+    new_pcb->kernel_context.regs[31]= (uint32_t)reset_cp0;
+    new_pcb->kernel_context.cp0_epc = task->entry_point;
+    new_pcb->kernel_context.cp0_status=0x10008003;
+
+    new_pcb->user_stack_top=new_pcb->user_context.regs[29]=get_stack();
+
+    new_pcb->user_context.regs[31]=task->entry_point;
+    new_pcb->user_context.cp0_epc=task->entry_point;
+    new_pcb->user_context.cp0_status=0x10008003;
+
+    new_pcb->priority=task->task_priority
+    new_pcb->task_priority=task->task_priority;
+    new_pcb->sleep_time=0;
+    new_pcb->begin_sleep_time=0;
+
+    new_pcb->lock_top=-1;
+    priority_queue_push(&ready_queue,(void *)new_pcb);
+    new_pcb->which_queue = &ready_queue;
+    queue_init(&new_pcb->wait_queue);
+
+}
+
+
+void do_kill(pid_t pid)
+{
+    int i;
+    pcb_t *pcb_to_kill = &pcb[pid];
+    pcb_to_kill->status = TASK_EXITED;
+
+    /* remove pcb_to_kill from task queue */
+    if(pcb_to_kill->which_queue != NULL){
+        queue_remove(pcb_to_kill->which_queue, (void *)pcb_to_kill);
+        pcb_to_kill->which_queue = NULL;
+    }
+
+    /* release lock */
+    for(i = 0; i <= pcb_to_kill->lock_top; i++)
+        do_mutex_lock_release(pcb_to_kill->lock[i]);
+
+    /* release wait task */
+    while(!queue_is_empty(&pcb_to_kill->wait_queue)){
+        pcb_t *wait_task = queue_dequeue(&pcb_to_kill->wait_queue);
+        wait_task->status = TASK_READY;
+        wait_task->which_queue = &ready_queue;
+        priority_queue_push(&ready_queue, (void *)wait_task);
+    }
+    if(pcb_to_kill==current_running)
+        do_scheduler();
+    reuse_stack[++reuse_stack_top] = pcb_to_kill->kernel_stack_top;
+    reuse_stack[++reuse_stack_top] = pcb_to_kill->user_stack_top;
+    queue_push(&exit_queue, (void *)pcb_to_kill);
+
+}
+
+void do_exit(){
+    int i;
+    pcb_t *pcb_to_exit = current_running;
+    pcb_to_exit->status = TASK_EXITED;
+
+    /* release lock */
+    for(i = 0; i <= pcb_to_exit->lock_top; i++)
+        do_mutex_lock_release(pcb_to_exit->lock[i]);
+
+    /* release wait task */
+    while(!queue_is_empty(&pcb_to_exit->wait_queue))
+    {
+        pcb_t *wait_task = queue_dequeue(&pcb_to_exit->wait_queue);
+        wait_task->status = TASK_READY;
+        wait_task->which_queue = &ready_queue;
+        priority_queue_push(&ready_queue, (void *)wait_task);
+    }
+    
+    reuse_stack[++reuse_stack_top] = pcb_to_exit->kernel_stack_top;
+    reuse_stack[++reuse_stack_top] = pcb_to_exit->user_stack_top;
+    
+    queue_push(&exit_queue, (void *)pcb_to_exit);
+}
+
+void do_wait(pid_t pid)
+{
+    if(pcb[pid].which_queue != NULL){
+        current_running->status = TASK_BLOCKED;
+        current_running->which_queue = &pcb[pid].wait_queue;
+        queue_push(&pcb[pid].wait_queue, (void *)current_running);
+        do_scheduler();
+    }
+    
+}
+

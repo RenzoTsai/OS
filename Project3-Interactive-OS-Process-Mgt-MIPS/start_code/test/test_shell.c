@@ -29,19 +29,20 @@
 #include "stdio.h"
 #include "screen.h"
 #include "syscall.h"
+#define MAXLEN 100
 
 static void disable_interrupt()
 {
-    uint32_t cp0_status = get_cp0_status();
+    uint32_t cp0_status = GET_CP0_STATUS();
     cp0_status &= 0xfffffffe;
-    set_cp0_status(cp0_status);
+    SET_CP0_STATUS(cp0_status);
 }
 
 static void enable_interrupt()
 {
-    uint32_t cp0_status = get_cp0_status();
+    uint32_t cp0_status = GET_CP0_STATUS();
     cp0_status |= 0x01;
-    set_cp0_status(cp0_status);
+    SET_CP0_STATUS(cp0_status);
 }
 
 static char read_uart_ch(void)
@@ -84,8 +85,47 @@ static struct task_info *test_tasks[16] = {&task1, &task2, &task3,
                                            &task13, &task14, &task15};
 static int num_test_tasks = 15;
 
+void process_cmd(uint32_t argc, char argv[][10])
+{
+    if(argc == 1){
+        if(!strcmp(argv[0], "ps")){
+            sys_ps();
+        }
+        else if(!strcmp(argv[0], "clear"))
+            sys_clear();
+        else
+            printf("Unknown command!\n");
+    }
+    else if(argc == 2){
+        int pid = atoi((char *)argv[1]);
+        if(!strcmp(argv[0], "exec"))
+        {
+            sys_spawn(test_tasks[pid-2]);
+            printf("exec process[%d]\n", pid);
+        }
+        else if(!strcmp(argv[0], "kill"))
+        {
+            sys_kill(pid-1);
+            printf("kill process pid = %d\n", pid);
+        }
+        else
+            printf("Unknown command!\n");
+    }
+    else if(argc != 0)
+        printf("Unknown command!\n");
+}
+
 void test_shell()
 {
+    char cmd[20];
+    uint32_t i = 0, argc, j, k;
+    char argv[3][10];
+
+    /* terminal */
+    sys_move_cursor(0, SCREEN_HEIGHT / 2);
+    printf("-------------------- COMMAND --------------------\n");
+    printf("> root@Vincent OS: ");
+    
     while (1)
     {
         // read command from UART port
@@ -94,5 +134,40 @@ void test_shell()
         enable_interrupt();
 
         // TODO solve command
+        if(ch == 0 || (i == 0 && (ch == 0x7f || ch == 8)))
+            continue;
+        printf("%c", ch);
+        if(ch != '\r')
+        {
+            if(ch == 8 || ch == 0x7f) // BS
+                i--;
+            else 
+                cmd[i++] = ch;
+            continue;
+        }
+        else
+        {
+            cmd[i++] = ' ', cmd[i] = '\0';
+            j = 0;
+            if(cmd[j] == ' ')
+                while(cmd[j] == ' ' && j < i)
+                    j++;
+            for(argc = k = 0; j < i; j++)
+            {
+                if(cmd[j] == ' ')
+                {
+                    argv[argc][k] = '\0';
+                    argc++, k = 0;
+                    while(cmd[j] == ' ' && j < i)
+                        j++;
+                }
+                argv[argc][k++] = cmd[j];
+            }
+
+            process_cmd(argc, argv);
+
+            i = 0;
+            printf("> root@Vincent OS: ");
+        }
     }
 }

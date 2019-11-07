@@ -31,11 +31,14 @@
 
 #include "type.h"
 #include "queue.h"
+#include "lock.h"
+#include "irq.h"
 
 #define NUM_MAX_TASK 16
 #define STACK_SIZE 0x10000
 #define STACK_MAX  0xa1000000
 #define STACK_MIN  0xa0f00000
+#define NUM_LOCK 16
 
 /* used to save register infomation */
 typedef struct regs_context
@@ -97,16 +100,28 @@ typedef struct pcb
     /* cursor position */
     int cursor_x;
     int cursor_y;
+
+    /* priority */
     int priority;
     int task_priority;
+
+    /* sleep */
     int begin_sleep_time;
     int sleep_time;
+
+    /* lock */
+    mutex_lock_t *lock[NUM_LOCK];
+    int lock_top;
+
+    queue_t * which_queue;
+    queue_t wait_queue;
 
 } pcb_t;
 
 /* task information, used to init PCB */
 typedef struct task_info
 {
+    char *name;
     uint32_t entry_point;
     task_type_t type;
     uint32_t task_priority;
@@ -121,6 +136,9 @@ extern queue_t block_queue[NUM_MAX_TASK];
 /* sleep queue to wait */
 extern queue_t sleep_queue;
 
+/* exit queue to exit */
+extern queue_t exit_queue;
+
 /* current running task PCB */
 extern pcb_t *current_running;
 extern pid_t process_id;
@@ -129,11 +147,29 @@ extern pcb_t pcb[NUM_MAX_TASK];
 extern uint32_t initial_cp0_status;
 extern uint32_t exception_handler[32];
 extern uint32_t lock_id;
+
+/* get reuse stack from exited or killed pcb */ 
+extern uint32_t reuse_stack[40];
+extern int reuse_stack_top;
+extern int stack_top;
+
 void do_scheduler(void);
 void do_sleep(uint32_t);
 
 void do_block(queue_t *);
 void do_unblock_one(queue_t *);
 void do_unblock_all(queue_t *);
+
+pid_t do_getpid(void);
+void test_shell(void);
+
+void do_ps(void);
+void do_clear(void);
+
+void do_spawn(task_info_t *);
+void do_kill(pid_t);
+void do_exit(void);
+void do_wait(pid_t);
+int get_stack();
 
 #endif

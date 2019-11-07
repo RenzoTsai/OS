@@ -38,10 +38,12 @@ void bzero(void *dest, uint32_t len);
 
 int strcmp(char *str1, char *str2);
 
-char *strcpy(char *dest, char *src);
+void strcpy(char *dest, char *src);
 
 char *strcat(char *dest, char *src);
 
 int strlen(char *src);
+
+int atoi(char *str);
 
 #endif

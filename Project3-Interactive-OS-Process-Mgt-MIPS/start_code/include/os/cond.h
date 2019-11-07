@@ -6,6 +6,8 @@
 
 typedef struct condition
 {
+	int num_waiting;
+	queue_t wait_queue;
 } condition_t;
 
 void do_condition_init(condition_t *condition);

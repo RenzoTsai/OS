@@ -6,6 +6,8 @@
 
 typedef struct semaphore
 {
+	int sem;
+	queue_t block_queue;
 } semaphore_t;
 
 void do_semaphore_init(semaphore_t *, int);

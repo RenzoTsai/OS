@@ -34,128 +34,55 @@
 #include "time.h"
 
 queue_t ready_queue;
-queue_t block_queue[NUM_MAX_TASK];
+queue_t exit_queue;
 queue_t sleep_queue;
 uint32_t initial_cp0_status;
 uint32_t queue_id;
 uint32_t exception_handler[32];
 uint32_t lock_id;
+uint32_t reuse_stack[40];
+int reuse_stack_top = -1;
+int stack_top = STACK_MAX;
 
 static void init_pcb()
 {
 	int i,j;
-	pcb[0].pid=process_id++;
+	queue_init(&ready_queue);
+	queue_init(&sleep_queue);
+	queue_init(&exit_queue);
+
+	pcb[0].pid=0;
 	pcb[0].status=TASK_RUNNING;
 	int stack_top=STACK_MAX;
 	queue_id=1;
-	lock_id=0;
-	
-	queue_init(&ready_queue);
-	for(i=0;i<NUM_MAX_TASK;i++)
-		queue_init(&block_queue[i]);
-	queue_init(&sleep_queue);
+	pcb[0].lock_top=-1;
 
-	for(i=0;i<num_timer_tasks;i++,queue_id++){
-		for(j=0;j<32;j++){
+	//init PCB[1]:SHELL	
+	pcb[1].pid=1;
+	for(j=0;j<32;j++){
 			pcb[queue_id].kernel_context.regs[j]=0;
 			pcb[queue_id].user_context.regs[j]=0;
-		}
-		pcb[queue_id].pid=process_id++;
-		pcb[queue_id].type=timer_tasks[i]->type;
-		pcb[queue_id].status=TASK_READY;
-
-		pcb[queue_id].kernel_stack_top=stack_top;
-		pcb[queue_id].kernel_context.regs[29]=stack_top;
-
-		stack_top-=STACK_SIZE;
-
-		pcb[queue_id].kernel_context.regs[31]= (uint32_t)reset_cp0;
-		pcb[queue_id].kernel_context.cp0_epc = timer_tasks[i]->entry_point;
-		pcb[queue_id].kernel_context.cp0_status=0x10008003;
-
-		pcb[queue_id].user_stack_top=stack_top;
-		pcb[queue_id].user_context.regs[29]=stack_top;
-		stack_top-=STACK_SIZE;
-
-		pcb[queue_id].user_context.regs[31]=timer_tasks[i]->entry_point;
-		pcb[queue_id].user_context.cp0_epc=timer_tasks[i]->entry_point;
-		pcb[queue_id].user_context.cp0_status=0x10008003;
-
-		pcb[queue_id].priority=timer_tasks[i]->task_priority;
-		pcb[queue_id].task_priority=timer_tasks[i]->task_priority;
-		pcb[queue_id].sleep_time=0;
-		pcb[queue_id].begin_sleep_time=0;
-		priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
 	}
+	pcb[queue_id].status=TASK_READY;
+	pcb[queue_id].kernel_stack_top = pcb[queue_id].kernel_context.regs[29] = get_stack();
 
-	for(i=0;i<num_lock_tasks;i++,queue_id++){
-		for(j=0;j<32;j++){
-			pcb[queue_id].kernel_context.regs[j]=0;
-			pcb[queue_id].user_context.regs[j]=0;
-		}
-		pcb[queue_id].pid=process_id++;
-		pcb[queue_id].type=lock_tasks[i]->type;
-		pcb[queue_id].status=TASK_READY;
+	pcb[queue_id].kernel_context.regs[31]= (uint32_t)reset_cp0;
+	pcb[queue_id].kernel_context.cp0_epc = (uint32_t)test_shell;
+	pcb[queue_id].kernel_context.cp0_status=0x10008003;
+	pcb[queue_id].user_stack_top = pcb[queue_id].user_context.regs[29] = get_stack();
 
-		pcb[queue_id].kernel_stack_top=stack_top;
-		pcb[queue_id].kernel_context.regs[29]=stack_top;
-
-		stack_top-=STACK_SIZE;
-
-		pcb[queue_id].kernel_context.regs[31]= (uint32_t)reset_cp0;
-		pcb[queue_id].kernel_context.cp0_epc = lock_tasks[i]->entry_point;
-		pcb[queue_id].kernel_context.cp0_status=0x10008003;
-
-		pcb[queue_id].user_stack_top=stack_top;
-		pcb[queue_id].user_context.regs[29]=stack_top;
-		stack_top-=STACK_SIZE;
-
-		pcb[queue_id].user_context.regs[31]=lock_tasks[i]->entry_point;
-		pcb[queue_id].user_context.cp0_epc=lock_tasks[i]->entry_point;
-		pcb[queue_id].user_context.cp0_status=0x10008003;
-
-		pcb[queue_id].priority=lock_tasks[i]->task_priority;
-		pcb[queue_id].task_priority=lock_tasks[i]->task_priority;
-		pcb[queue_id].sleep_time=0;
-		pcb[queue_id].begin_sleep_time=0;
-		priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
-	}
-
-	for(i=0;i<num_sched2_tasks;i++,queue_id++){
-		for(j=0;j<32;j++){
-			pcb[queue_id].kernel_context.regs[j]=0;
-			pcb[queue_id].user_context.regs[j]=0;
-		}
-		pcb[queue_id].pid=process_id++;
-		pcb[queue_id].type=sched2_tasks[i]->type;
-		pcb[queue_id].status=TASK_READY;
-
-		pcb[queue_id].kernel_stack_top=stack_top;
-		pcb[queue_id].kernel_context.regs[29]=stack_top;
-
-		stack_top-=STACK_SIZE;
-
-		pcb[queue_id].kernel_context.regs[31]= (uint32_t)reset_cp0;
-		pcb[queue_id].kernel_context.cp0_epc = sched2_tasks[i]->entry_point;
-		pcb[queue_id].kernel_context.cp0_status=0x10008003;
-
-		pcb[queue_id].user_stack_top=stack_top;
-		pcb[queue_id].user_context.regs[29]=stack_top;
-		stack_top-=STACK_SIZE;
-
-		pcb[queue_id].user_context.regs[31]=sched2_tasks[i]->entry_point;
-		pcb[queue_id].user_context.cp0_epc=sched2_tasks[i]->entry_point;
-		pcb[queue_id].user_context.cp0_status=0x10008003;
-
-		pcb[queue_id].priority=sched2_tasks[i]->task_priority;
-		pcb[queue_id].task_priority=sched2_tasks[i]->task_priority;
-		pcb[queue_id].sleep_time=0;
-		pcb[queue_id].begin_sleep_time=0;
-		priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
-	}
-
-
-	 current_running=&pcb[0];
+	pcb[queue_id].user_context.regs[31]=(uint32_t)test_shell;
+	pcb[queue_id].user_context.cp0_epc=(uint32_t)test_shell;
+	pcb[queue_id].user_context.cp0_status=0x10008003;
+	pcb[queue_id].priority=100;
+	pcb[queue_id].task_priority=100;
+	pcb[queue_id].sleep_time=0;
+	pcb[queue_id].begin_sleep_time=0;
+	pcb[queue_id].lock_top=-1;
+	queue_init(&pcb[queue_id].wait_queue);
+	priority_queue_push(&ready_queue,(void *)&pcb[queue_id]);
+	current_running=&pcb[0];
+	process_id=2;
 }
 
 static void init_exception_handler()
@@ -197,18 +124,32 @@ static void init_syscall(void)
 	int i;
 	for(i = 0; i < NUM_SYSCALLS; i++)
 		syscall[i] = (int (*)())0;
-	syscall[SYSCALL_SLEEP] = (int (*)())&do_sleep;
-	syscall[SYSCALL_BLOCK] = (int (*)())&do_block;
-	syscall[SYSCALL_UNBLOCK_ONE] = (int (*)())&do_unblock_one;
-	syscall[SYSCALL_UNBLOCK_ALL] = (int (*)())&do_unblock_all;
-	syscall[SYSCALL_WRITE] = (int (*)())&screen_write;
-	syscall[SYSCALL_CURSOR] = (int (*)())&screen_move_cursor;
-	syscall[SYSCALL_REFLUSH] = (int (*)())&screen_reflush;
-	syscall[SYSCALL_MUTEX_LOCK_INIT] = (int (*)())&do_mutex_lock_init;
-	syscall[SYSCALL_MUTEX_LOCK_ACQUIRE] = (int (*)())&do_mutex_lock_acquire;
-	syscall[SYSCALL_MUTEX_LOCK_RELEASE] = (int (*)())&do_mutex_lock_release;
-
-
+	syscall[SYSCALL_SLEEP              ] = (int (*)()) & do_sleep;
+	syscall[SYSCALL_GETPID             ] = (int (*)()) & do_getpid;
+	syscall[SYSCALL_BLOCK              ] = (int (*)()) & do_block;
+	syscall[SYSCALL_UNBLOCK_ONE        ] = (int (*)()) & do_unblock_one;
+	syscall[SYSCALL_UNBLOCK_ALL        ] = (int (*)()) & do_unblock_all;
+	syscall[SYSCALL_WRITE              ] = (int (*)()) & screen_write;
+	syscall[SYSCALL_CURSOR             ] = (int (*)()) & screen_move_cursor;
+	syscall[SYSCALL_REFLUSH            ] = (int (*)()) & screen_reflush;
+	syscall[SYSCALL_PS                 ] = (int (*)()) & do_ps;
+	syscall[SYSCALL_CLEAR              ] = (int (*)()) & do_clear;
+	syscall[SYSCALL_SPAWN              ] = (int (*)()) & do_spawn;
+	syscall[SYSCALL_KILL               ] = (int (*)()) & do_kill;
+	syscall[SYSCALL_EXIT               ] = (int (*)()) & do_exit;
+	syscall[SYSCALL_WAITPID            ] = (int (*)()) & do_wait;
+	syscall[SYSCALL_MUTEX_LOCK_INIT    ] = (int (*)()) & do_mutex_lock_init;
+	syscall[SYSCALL_MUTEX_LOCK_ACQUIRE ] = (int (*)()) & do_mutex_lock_acquire;
+	syscall[SYSCALL_MUTEX_LOCK_RELEASE ] = (int (*)()) & do_mutex_lock_release;
+	syscall[SYSCALL_BARRIER_INIT       ] = (int (*)()) & do_barrier_init;
+	syscall[SYSCALL_BARRIER_WAIT       ] = (int (*)()) & do_barrier_wait; 
+	syscall[SYSCALL_SEMAPHORE_INIT     ] = (int (*)()) & do_semaphore_init;
+	syscall[SYSCALL_SEMAPHORE_UP       ] = (int (*)()) & do_semaphore_up;
+	syscall[SYSCALL_SEMAPHORE_DOWN     ] = (int (*)()) & do_semaphore_down;
+	syscall[SYSCALL_CONDITION_INIT     ] = (int (*)()) & do_condition_init;
+	syscall[SYSCALL_CONDITION_WAIT     ] = (int (*)()) & do_condition_wait;
+	syscall[SYSCALL_CONDITION_SIGNAL   ] = (int (*)()) & do_condition_signal;
+	syscall[SYSCALL_CONDITION_BROADCAST] = (int (*)()) & do_condition_broadcast;
 	// init system call table.
 }
 
@@ -236,7 +177,7 @@ void __attribute__((section(".entry_function"))) _start(void)
 	// init screen (QAQ)
 	init_screen();
 	printk("> [INIT] SCREEN initialization succeeded.\n");
-	screen_clear();
+	screen_clear(0,SCREEN_HEIGHT);
 
 	
 	

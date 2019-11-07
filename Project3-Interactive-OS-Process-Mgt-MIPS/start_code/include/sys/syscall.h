@@ -30,6 +30,7 @@
 
 #include "type.h"
 #include "sync.h"
+#include "sched.h"
 #include "queue.h"
 
 #define IGNORE 0
@@ -37,15 +38,33 @@
 
 /* define */
 #define SYSCALL_SLEEP 2
+#define SYSCALL_PS 	3
+#define SYSCALL_CLEAR 4
+#define SYSCALL_SPAWN 5
+#define SYSCALL_KILL 6
+#define SYSCALL_EXIT 7
+#define SYSCALL_WAITPID 8
+#define SYSCALL_GETPID 9
 
 #define SYSCALL_BLOCK 10
 #define SYSCALL_UNBLOCK_ONE 11
 #define SYSCALL_UNBLOCK_ALL 12
 
+#define SYSCALL_BARRIER_INIT 13
+#define SYSCALL_BARRIER_WAIT 14
+#define SYSCALL_SEMAPHORE_INIT 15
+#define SYSCALL_SEMAPHORE_UP 16
+#define SYSCALL_SEMAPHORE_DOWN 17
+#define SYSCALL_CONDITION_INIT 18
+#define SYSCALL_CONDITION_WAIT 19
+
 #define SYSCALL_WRITE 20
 #define SYSCALL_READ 21
 #define SYSCALL_CURSOR 22
 #define SYSCALL_REFLUSH 23
+
+#define SYSCALL_CONDITION_SIGNAL 24
+#define SYSCALL_CONDITION_BROADCAST 25
 
 #define SYSCALL_MUTEX_LOCK_INIT 30
 #define SYSCALL_MUTEX_LOCK_ACQUIRE 31
@@ -67,8 +86,34 @@ void sys_write(char *);
 void sys_move_cursor(int, int);
 void sys_reflush();
 
+void sys_pc();
+void sys_clear();
+void sys_spawn(task_info_t *task);
+void sys_kill(pid_t pid);
+void sys_exit();
+void sys_waitpid(pid_t pid);
+pid_t sys_getpid ();
+
 void mutex_lock_init(mutex_lock_t *);
 void mutex_lock_acquire(mutex_lock_t *);
 void mutex_lock_release(mutex_lock_t *);
+
+void barrier_init(barrier_t *barrier, int goal);
+
+void barrier_wait(barrier_t *barrier);
+
+void semaphore_init(semaphore_t *s, int val);
+
+void semaphore_up(semaphore_t *s);
+
+void semaphore_down(semaphore_t *s);
+
+void condition_init(condition_t *condition);
+
+void condition_wait(mutex_lock_t *lock, condition_t *condition);
+
+void condition_signal(condition_t *condition);
+
+void condition_broadcast(condition_t *condition);
 
 #endif
