@@ -28,6 +28,6 @@ void do_condition_signal(condition_t *condition)
 
 void do_condition_broadcast(condition_t *condition)
 {
-	do_unblock_all(condition->wait_queue);
+	do_unblock_all(&condition->wait_queue);
 }
 

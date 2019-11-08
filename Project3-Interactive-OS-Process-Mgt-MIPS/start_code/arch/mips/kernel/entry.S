@@ -207,7 +207,7 @@ NESTED(handle_int, 0, sp)
     addi sp, sp, 8
 reset_cp0:
     mtc0    zero, CP0_COUNT
-    li      k0, 150000
+    li      k0, 1500000
     mtc0    k0, CP0_COMPARE
 
     RESTORE_CONTEXT(USER)

@@ -85,7 +85,7 @@ static struct task_info *test_tasks[16] = {&task1, &task2, &task3,
                                            &task13, &task14, &task15};
 static int num_test_tasks = 15;
 
-void process_cmd(uint32_t argc, char argv[][10])
+void process_cmd(uint32_t argc, char argv[][15])
 {
     if(argc == 1){
         if(!strcmp(argv[0], "ps")){
@@ -93,6 +93,12 @@ void process_cmd(uint32_t argc, char argv[][10])
         }
         else if(!strcmp(argv[0], "clear"))
             sys_clear();
+        else if(!strcmp(argv[0], "exit"))
+            sys_exit();
+        else if(!strcmp(argv[0], "egg")){
+            drawing_task2();
+        }
+
         else
             printf("Unknown command!\n");
     }
@@ -100,7 +106,7 @@ void process_cmd(uint32_t argc, char argv[][10])
         int pid = atoi((char *)argv[1]);
         if(!strcmp(argv[0], "exec"))
         {
-            sys_spawn(test_tasks[pid-2]);
+            sys_spawn(test_tasks[pid-1]);
             printf("exec process[%d]\n", pid);
         }
         else if(!strcmp(argv[0], "kill"))
@@ -119,7 +125,7 @@ void test_shell()
 {
     char cmd[20];
     uint32_t i = 0, argc, j, k;
-    char argv[3][10];
+    char argv[3][15];
 
     /* terminal */
     sys_move_cursor(0, SCREEN_HEIGHT / 2);
@@ -139,8 +145,12 @@ void test_shell()
         printf("%c", ch);
         if(ch != '\r')
         {
-            if(ch == 8 || ch == 0x7f) // BS
+            if(ch == 8 || ch == 0x7f){ // BS
                 i--;
+                screen_cursor_x-=2;   //clear invalid char
+                printf(" ");
+                screen_cursor_x--;
+            }
             else 
                 cmd[i++] = ch;
             continue;

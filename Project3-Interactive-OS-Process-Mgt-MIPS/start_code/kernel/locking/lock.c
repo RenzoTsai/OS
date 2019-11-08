@@ -30,6 +30,7 @@ void do_mutex_lock_acquire(mutex_lock_t *lock)
 {
 	while(lock->status==LOCKED){
 		do_block(&lock->block_queue);
+        do_scheduler();
 	}
 	lock->status=LOCKED;
 	current_running->lock[++current_running->lock_top] = lock;

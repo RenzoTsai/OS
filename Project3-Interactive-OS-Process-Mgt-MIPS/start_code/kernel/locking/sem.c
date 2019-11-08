@@ -23,6 +23,8 @@ void do_semaphore_down(semaphore_t *s)
 {
 	if(s>0)
 		s->sem--;
-	else
+	else{
 		do_block(&s->block_queue);
+		do_scheduler();
+	}
 }

@@ -26,7 +26,7 @@ void producer_task(void)
         mutex_lock_release(&mutex);
 
         sys_move_cursor(0, print_location);
-        printf("> [TASK] Total produced %d products.", sum_production);
+        printf("> [TASK1] Total produced %d products.                        ", sum_production);
 
         // condition_signal(&condition);
         condition_broadcast(&condition);
@@ -56,7 +56,7 @@ void consumer_task1(void)
         sum_consumption += consumption;
 
         sys_move_cursor(0, print_location);
-        printf("> [TASK] Total consumed %d products.", sum_consumption);
+        printf("> [TASK2] Total consumed %d products.                        ", sum_consumption);
 
         mutex_lock_release(&mutex);
     }
@@ -81,7 +81,7 @@ void consumer_task2(void)
         sum_consumption += consumption;
 
         sys_move_cursor(0, print_location);
-        printf("> [TASK] Total consumed %d products.", sum_consumption);
+        printf("> [TASK3] Total consumed %d products.                        ", sum_consumption);
 
         mutex_lock_release(&mutex);
 

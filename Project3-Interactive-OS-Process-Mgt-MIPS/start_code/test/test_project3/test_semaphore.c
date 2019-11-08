@@ -23,7 +23,7 @@ void semaphore_add_task1(void)
         semaphore_up(&semaphore);
 
         sys_move_cursor(0, print_location);
-        printf("> [TASK] current global value %d. (%d)", global_count, i + 1);
+        printf("> [TASK] current global value %d. (%d)           ", global_count, i + 1);
 
         sys_sleep(1);
     }
@@ -45,7 +45,7 @@ void semaphore_add_task2(void)
         semaphore_up(&semaphore);
 
         sys_move_cursor(0, print_location);
-        printf("> [TASK] current global value %d. (%d)", global_count, i + 1);
+        printf("> [TASK] current global value %d. (%d)          ", global_count, i + 1);
 
         sys_sleep(1);
     }
@@ -67,7 +67,7 @@ void semaphore_add_task3(void)
         semaphore_up(&semaphore);
 
         sys_move_cursor(0, print_location);
-        printf("> [TASK] current global value %d. (%d)", global_count, i + 1);
+        printf("> [TASK] current global value %d. (%d)          ", global_count, i + 1);
 
         sys_sleep(1);
     }

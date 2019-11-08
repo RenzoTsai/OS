@@ -33,4 +33,6 @@ void SunQuan(void);
 void LiuBei(void);
 void CaoCao(void);
 
+void drawing_task2(void);
+
 #endif

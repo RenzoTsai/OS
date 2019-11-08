@@ -13,7 +13,7 @@ SRC_SCHED	= ./kernel/sched/sched.c ./kernel/sched/queue.c ./kernel/sched/time.c
 SRC_SYSCALL	= ./kernel/syscall/syscall.c
 SRC_LIBS	= ./libs/string.c ./libs/printk.c ./libs/mailbox.c
 
-SRC_TEST	= ./test/test_shell.c
+SRC_TEST	= ./test/test_shell.c ./test/test_project2/test_scheduler2.c
 SRC_TEST2	= ./test/test_project3/test_sanguo.c ./test/test_project3/test_semaphore.c ./test/test_project3/test_kill.c ./test/test_project3/test_barrier.c ./test/test_project3/test_condition.c 
 
 SRC_IMAGE	= ./tools/createimage.c

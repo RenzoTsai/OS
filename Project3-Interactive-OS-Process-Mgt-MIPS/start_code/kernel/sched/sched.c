@@ -42,6 +42,7 @@ void scheduler(void)
         current_running->status = TASK_READY;
         if(current_running->pid != 0){
             priority_queue_push(&ready_queue, current_running);
+            current_running->which_queue=&ready_queue;
         }
     }
     current_running = next_running;
@@ -62,6 +63,7 @@ void do_sleep(uint32_t sleep_time)
     current_running->sleep_time=sleep_time;
     current_running->status=TASK_BLOCKED;
     queue_push(&sleep_queue,current_running);
+    current_running->which_queue=&sleep_queue;
     do_scheduler();
     // TODO sleep(seconds)
 }
@@ -70,8 +72,9 @@ void do_block(queue_t *queue)
 {
     // block the current_running task into the queue
 	current_running->status=TASK_BLOCKED;
+    current_running->which_queue=queue;
 	queue_push(queue,(void*)current_running);
-	do_scheduler();
+	//do_scheduler();
     
 }
 
@@ -116,22 +119,34 @@ int get_stack(){
 
 void do_clear()
 {
-    screen_clear(SCREEN_HEIGHT / 2 +2, SCREEN_HEIGHT);
-    screen_move_cursor(0, SCREEN_HEIGHT / 2 + 1);
+    screen_clear(SCREEN_HEIGHT / 2, SCREEN_HEIGHT);
+    screen_move_cursor(0, SCREEN_HEIGHT / 2);
+    do_print("-------------------- COMMAND --------------------\n");
 }
 
 void do_ps(void){
     pcb_t *p,*q;
-    p= ready_queue.head;
-    printk("[PROCESS TABLE]");
+    p= (pcb_t *) ready_queue.head;
+    do_print("[PROCESS TABLE]\n");
     int i=0;
     while(p!=NULL){
-        if(p->status=TASK_RUNNING){
-            printk("[%d] PID: %d STATUS: RUNNING\n",i,p->pid);
+        if(p->status==TASK_RUNNING){
+            do_print("[%d] PID: %d STATUS: RUNNING\n",i,p->pid);
             i++;
+        }
+        else if(p->status==TASK_READY){
+             do_print("[%d] PID: %d STATUS: READY\n",i,p->pid);
+            i++;
+        }
+        else{
+            do_print("NO TASK IN READY QUEUE\n");
         }
         p=p->next;
     }
+    p=current_running;
+    do_print("[%d] PID: %d STATUS: RUNNING\n",i,p->pid);
+    i++;
+
 }
 
 pid_t do_getpid()
@@ -153,22 +168,19 @@ void do_spawn(task_info_t *task){
     new_pcb->status=TASK_READY;
 
     new_pcb->kernel_stack_top=new_pcb->kernel_context.regs[29]=get_stack();
-
     new_pcb->kernel_context.regs[31]= (uint32_t)reset_cp0;
     new_pcb->kernel_context.cp0_epc = task->entry_point;
     new_pcb->kernel_context.cp0_status=0x10008003;
 
     new_pcb->user_stack_top=new_pcb->user_context.regs[29]=get_stack();
-
     new_pcb->user_context.regs[31]=task->entry_point;
     new_pcb->user_context.cp0_epc=task->entry_point;
     new_pcb->user_context.cp0_status=0x10008003;
 
-    new_pcb->priority=task->task_priority
+    new_pcb->priority=task->task_priority;
     new_pcb->task_priority=task->task_priority;
     new_pcb->sleep_time=0;
     new_pcb->begin_sleep_time=0;
-
     new_pcb->lock_top=-1;
     priority_queue_push(&ready_queue,(void *)new_pcb);
     new_pcb->which_queue = &ready_queue;
@@ -182,9 +194,9 @@ void do_kill(pid_t pid)
     int i;
     pcb_t *pcb_to_kill = &pcb[pid];
     pcb_to_kill->status = TASK_EXITED;
-
+    
     /* remove pcb_to_kill from task queue */
-    if(pcb_to_kill->which_queue != NULL){
+    if(pcb_to_kill->which_queue != NULL && pcb_to_kill->which_queue !=(&exit_queue) && pcb_to_kill!=current_running){
         queue_remove(pcb_to_kill->which_queue, (void *)pcb_to_kill);
         pcb_to_kill->which_queue = NULL;
     }
@@ -192,7 +204,7 @@ void do_kill(pid_t pid)
     /* release lock */
     for(i = 0; i <= pcb_to_kill->lock_top; i++)
         do_mutex_lock_release(pcb_to_kill->lock[i]);
-
+    
     /* release wait task */
     while(!queue_is_empty(&pcb_to_kill->wait_queue)){
         pcb_t *wait_task = queue_dequeue(&pcb_to_kill->wait_queue);
@@ -200,11 +212,13 @@ void do_kill(pid_t pid)
         wait_task->which_queue = &ready_queue;
         priority_queue_push(&ready_queue, (void *)wait_task);
     }
-    if(pcb_to_kill==current_running)
-        do_scheduler();
     reuse_stack[++reuse_stack_top] = pcb_to_kill->kernel_stack_top;
     reuse_stack[++reuse_stack_top] = pcb_to_kill->user_stack_top;
     queue_push(&exit_queue, (void *)pcb_to_kill);
+    pcb_to_kill->which_queue=&exit_queue;
+    
+    if(pcb_to_kill==current_running)
+        do_scheduler();
 
 }
 
@@ -230,6 +244,9 @@ void do_exit(){
     reuse_stack[++reuse_stack_top] = pcb_to_exit->user_stack_top;
     
     queue_push(&exit_queue, (void *)pcb_to_exit);
+    pcb_to_exit->which_queue=&exit_queue;
+    //do_print("\nTASK PID:%d HAS EXITED\n",current_running->pid);
+    do_scheduler();
 }
 
 void do_wait(pid_t pid)

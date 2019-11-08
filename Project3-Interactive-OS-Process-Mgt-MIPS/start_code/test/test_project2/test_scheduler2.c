@@ -2,10 +2,11 @@
 #include "stdio.h"
 #include "test2.h"
 #include "syscall.h"
+#include "screen.h"
 
 static char blank[] = {"                    "};
 static char plane1[] = {"    ___         _   "};
-static char plane2[] = {"| __\\_\\______/_|  "};
+static char plane2[] = {"| __\\_\\______/_| ....This is an Easter Eggs "};
 static char plane3[] = {"<[___\\_\\_______|  "};
 static char plane4[] = {"|  o'o              "};
 
@@ -53,9 +54,10 @@ void printf_task2(void)
 
 void drawing_task2(void)
 {
-    int i, j = 20;
+    int i, j = SCREEN_HEIGHT / 2 - 9;
+    int k=55;
 
-    while (1)
+    while (k>0)
     {
         for (i = 55; i > 0; i--)
         {
@@ -86,5 +88,8 @@ void drawing_task2(void)
         sys_move_cursor(1, j + 3);
         printf("%s", blank);
         enable_interrupt();
+        k--;
     }
+    sys_clear();
+
 }

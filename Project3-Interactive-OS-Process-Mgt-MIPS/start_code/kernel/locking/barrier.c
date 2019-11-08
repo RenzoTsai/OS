@@ -12,9 +12,10 @@ void do_barrier_wait(barrier_t *barrier)
 	barrier->waiting_num++;
 	if(barrier->barrier_num>barrier->waiting_num){
 		do_block(&barrier->block_queue);
+		do_scheduler();
 	}
 	else{
 		do_unblock_all(&barrier->block_queue);
-		do_scheduler();
+		//do_scheduler();
 	}
 }

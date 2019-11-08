@@ -232,3 +232,18 @@ int printf(const char *fmt, ...)
 	sys_write(buff);
 	return ret;
 }
+
+int do_print(const char *fmt, ...)
+{
+	int ret;
+	va_list va;
+	char buff[256];
+
+	va_start(va, fmt);
+	ret = mini_vsnprintf(buff, 256, fmt, va);
+	va_end(va);
+
+	buff[ret] = '\0';
+	screen_write(buff);
+	return ret;
+}

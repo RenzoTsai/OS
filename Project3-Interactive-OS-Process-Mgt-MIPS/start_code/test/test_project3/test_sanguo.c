@@ -13,8 +13,11 @@ struct task_info cc_task = {"CaoCao", (uint32_t)&CaoCao, USER_PROCESS};
 
 void SunQuan(void)
 {
+    mbox_init();
     mailbox_t *pub = mbox_open("SunQuan-Publish-PID");
+    
     pid_t myPid = sys_getpid();
+    
     
     /* Send PID twice, once for LiuBei,
      * and once for the CaoCao */
@@ -23,10 +26,13 @@ void SunQuan(void)
     // printf("SunQuan(%d): Hello, I am SunQuan          ", myPid);
 
     mbox_send(pub, &myPid, sizeof(pid_t));
+    //do_print("in3\n");
     mbox_send(pub, &myPid, sizeof(pid_t));
+    //do_print("in4\n");
 
     /* Find LiuBei's PID */
     mailbox_t *sub = mbox_open("LiuBei-Publish-PID");
+    //do_print("in5\n");
 
     for (;;)
     {
