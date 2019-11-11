@@ -6,8 +6,10 @@
 
 void system_call_helper(int fn, int arg1, int arg2, int arg3)
 {
+    int ret;
     current_running->user_context.cp0_epc+=4;
-    syscall[fn](arg1, arg2, arg3);
+    ret = syscall[fn](arg1, arg2, arg3);
+    current_running->user_context.regs[2] = ret;
 }
 
 void sys_sleep(uint32_t time)

@@ -55,5 +55,6 @@ void do_mutex_lock_release(mutex_lock_t *lock)
 		do_unblock_one(&lock->block_queue);
 	}
 	lock->status=UNLOCKED;
+    do_scheduler();
 
 }

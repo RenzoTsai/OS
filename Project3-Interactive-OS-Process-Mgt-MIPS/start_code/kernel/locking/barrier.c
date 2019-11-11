@@ -16,6 +16,6 @@ void do_barrier_wait(barrier_t *barrier)
 	}
 	else{
 		do_unblock_all(&barrier->block_queue);
-		//do_scheduler();
+		barrier->waiting_num=0;
 	}
 }

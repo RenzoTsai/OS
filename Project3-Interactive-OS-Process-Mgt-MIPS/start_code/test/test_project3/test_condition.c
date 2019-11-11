@@ -15,6 +15,8 @@ void producer_task(void)
     int print_location = 0;
     int production = 3;
     int sum_production = 0;
+    mutex_lock_init(&mutex);
+    condition_init(&condition);
 
     for (i = 0; i < 50; i++)
     {
@@ -28,7 +30,7 @@ void producer_task(void)
         sys_move_cursor(0, print_location);
         printf("> [TASK1] Total produced %d products.                        ", sum_production);
 
-        // condition_signal(&condition);
+        //condition_signal(&condition);
         condition_broadcast(&condition);
 
         sys_sleep(1);
@@ -70,6 +72,7 @@ void consumer_task2(void)
 
     while (1)
     {
+        //printf("ct2\n");
         mutex_lock_acquire(&mutex);
 
         while (num_staff == 0)

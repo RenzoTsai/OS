@@ -9,9 +9,7 @@ static mutex_lock_t mbox_lock;
 void mbox_init()
 {
 	int i;
-    //
     mutex_lock_init(&mbox_lock);
-   //
     for(i = 0; i < MAX_NUM_BOX; i++)
     {
         mboxs[i].name[0] = '\0';
@@ -22,15 +20,12 @@ void mbox_init()
         condition_init(&mboxs[i].empty);
         mutex_lock_init(&mboxs[i].mutex);
     }
-    //do_print("13\n");
 }
 
 mailbox_t *mbox_open(char *name)
 {
 	int i=0;
-    //do_print("11\n");
 	mutex_lock_acquire(&mbox_lock);
-    //do_print("12\n");
 	for(i=0;i<MAX_NUM_BOX;i++){
 		if(!strcmp(name,mboxs[i].name)){
 			mboxs[i].cited++;
@@ -38,7 +33,6 @@ mailbox_t *mbox_open(char *name)
 			return &mboxs[i];
 		}
     }
-    //do_print("13\n");
 	for(i=0;i<MAX_NUM_BOX;i++){
 		if(mboxs[i].name[0]=='\0'){
 			strcpy(mboxs[i].name, name);
@@ -48,7 +42,6 @@ mailbox_t *mbox_open(char *name)
 		}
     }
 	mutex_lock_release(&mbox_lock);
-    //do_print("14\n");
 }
 
 void mbox_close(mailbox_t *mailbox)
@@ -69,10 +62,8 @@ void mbox_close(mailbox_t *mailbox)
 void mbox_send(mailbox_t *mailbox, void *msg, int msg_length)
 {
 	mutex_lock_acquire(&mailbox->mutex);
-    //do_print("21\n");
 	while(MSG_MAX_SIZE - mailbox->used_size < msg_length)
         condition_wait(&mailbox->mutex, &mailbox->empty);
-    //do_print("22\n");
     if(MSG_MAX_SIZE - mailbox->msg_tail < msg_length){
         memcpy((uint8_t *)(mailbox->msg + mailbox->msg_tail), (uint8_t *)msg, MSG_MAX_SIZE - mailbox->msg_tail);
         mailbox->msg_tail = msg_length - (MSG_MAX_SIZE - mailbox->msg_tail);
@@ -82,7 +73,6 @@ void mbox_send(mailbox_t *mailbox, void *msg, int msg_length)
         memcpy((uint8_t *)(mailbox->msg + mailbox->msg_tail), (uint8_t *)msg, msg_length);
         mailbox->msg_tail += msg_length;
     }
-    //do_print("23\n");
     mailbox->used_size += msg_length;
     condition_broadcast(&mailbox->full);
     //do_print("24\n");

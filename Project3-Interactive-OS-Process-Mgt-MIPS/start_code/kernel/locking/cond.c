@@ -19,11 +19,9 @@ void do_condition_wait(mutex_lock_t *lock, condition_t *condition)
 void do_condition_signal(condition_t *condition)
 {
 	if(condition->num_waiting > 0){
-		if(! queue_is_empty(&condition->wait_queue)){
-			do_unblock_one(&condition->wait_queue);
-    	}
-		condition->num_waiting--;
+		do_unblock_one(&condition->wait_queue);
 	}
+	condition->num_waiting--;
 }
 
 void do_condition_broadcast(condition_t *condition)

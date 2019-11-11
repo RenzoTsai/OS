@@ -111,8 +111,8 @@ void process_cmd(uint32_t argc, char argv[][15])
         }
         else if(!strcmp(argv[0], "kill"))
         {
-            sys_kill(pid-1);
-            printf("kill process pid = %d\n", pid);
+            sys_kill(pid);
+            //printf("kill process pid = %d\n", pid);
         }
         else
             printf("Unknown command!\n");
@@ -147,9 +147,9 @@ void test_shell()
         {
             if(ch == 8 || ch == 0x7f){ // BS
                 i--;
-                screen_cursor_x-=2;   //clear invalid char
-                printf(" ");
-                screen_cursor_x--;
+                // screen_cursor_x-=2;   //clear invalid char in QEMU
+                // printf(" ");
+                // screen_cursor_x--;
             }
             else 
                 cmd[i++] = ch;

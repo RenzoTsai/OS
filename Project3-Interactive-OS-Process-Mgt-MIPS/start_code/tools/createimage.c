@@ -77,7 +77,8 @@ void write_kernel(FILE *image, FILE *knfile, Elf32_Phdr *Phdr, int kernelsz)
 		fread(temp,total_phdr[i].p_filesz, 1, knfile);
     }
     
-    fwrite(temp, kernelsz, 1, image);			//write kernel to image
+    fwrite(temp, total_phdr[0].p_filesz, 1, image);			//write kernel to image
+    fwrite(zero,1,total_phdr[0].p_memsz-total_phdr[0].p_filesz,image);
 
      if(kernelsz % 512){						//add zero in the end
 		 fwrite(zero, 1, 512-kernelsz%512, image);

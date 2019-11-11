@@ -67,7 +67,7 @@ void screen_write_ch(char ch)
         screen_cursor_x = 0;
         screen_cursor_y++;
     }
-    else if (ch == 8) // backspace
+    else if (ch == 8||ch == 0x7f) // backspace
     {
         if (screen_cursor_x > 0)
         {

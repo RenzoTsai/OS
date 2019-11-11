@@ -50,24 +50,10 @@ void priority_queue_push(queue_t *queue, void *item)
     }
     else
     {
-        if(((item_t *)(queue->head))->priority < _item->priority)
-        {
-            _item->next = queue->head;
-            _item->prev = NULL;
-            ((item_t *)(queue->head))->prev = item;
-            queue->head = item;
-        }
-        else
-        {
-            item_t *pos = queue->head;
-            while(pos->next != NULL && ((item_t *)(pos->next))->priority >= _item->priority)
-                pos = pos->next;    
-            if(pos->next == NULL)
-                queue->tail = item;
-            _item->next = pos->next;
-            _item->prev = pos;
-            pos->next = item;
-        }
+        ((item_t *)(queue->tail))->next = item;
+        _item->next = NULL;
+        _item->prev = queue->tail;
+        queue->tail = item;
     }
 }
 
