@@ -82,3 +82,17 @@ int atoi(char *str)
 	
 	return num;
 }
+
+int hextoi(char *str)
+{
+	int len = strlen(str);
+	int num = 0, i;
+
+	for(i = 0; i < len&&str[i]!='x'; i++)
+		;
+	i++;
+	for(; i < len; i++)
+		num = num*16 + str[i]-'0';
+	
+	return num;
+}

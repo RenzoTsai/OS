@@ -41,17 +41,17 @@ static char read_uart_ch(void)
 }
 */
 
-void rw_task1(unsigned long a[6])
+void rw_task1(void)
 {
 	int mem1, mem2 = 0;
 	int curs = 0;
 	int memory[RW_TIMES];
 	int i = 0;
+	uint32_t rw_task1_ipt[6]={0x20001000,0x20002000,0x20003000,0x20001000,0x20002000,0x20003000};
 	for(i = 0; i < RW_TIMES; i++)
 	{
-		vt100_move_cursor(1, curs+i);
-		mem1 = a[i];
-		vt100_move_cursor(1, curs+i);
+		mem1 = rw_task1_ipt[i];
+		sys_move_cursor(1, curs+i);
 		memory[i] = mem2 = rand();
 		*(int *)mem1 = mem2;
 		printf("Write: 0x%x, %d", mem1, mem2);
@@ -59,9 +59,8 @@ void rw_task1(unsigned long a[6])
 	curs = RW_TIMES;
 	for(i = 0; i < RW_TIMES; i++)
 	{
-		vt100_move_cursor(1, curs+i);
-		mem1 = a[RW_TIMES+i];
-		vt100_move_cursor(1, curs+i);
+		mem1 = rw_task1_ipt[RW_TIMES+i];
+		sys_move_cursor(1, curs+i);
 		memory[i+RW_TIMES] = *(int *)mem1;
 		if(memory[i+RW_TIMES] == memory[i])
 			printf("Read succeed: %d", memory[i+RW_TIMES]);

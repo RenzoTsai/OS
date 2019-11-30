@@ -46,4 +46,6 @@ int strlen(char *src);
 
 int atoi(char *str);
 
+int hextoi(char *str);
+
 #endif

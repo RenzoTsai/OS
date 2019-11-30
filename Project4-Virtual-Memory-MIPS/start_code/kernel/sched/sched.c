@@ -118,9 +118,16 @@ int get_stack(){
         new_stack = reuse_stack[reuse_stack_top--];
     else{
         new_stack=stack_top ;
-        stack_top-=- STACK_SIZE;
+        stack_top-= STACK_SIZE;
     }
 
+    return new_stack;
+}
+
+int get_usr_stack(){
+    int new_stack;
+    new_stack=usr_stack_top ;
+    usr_stack_top-= STACK_SIZE;
     return new_stack;
 }
 
@@ -214,7 +221,7 @@ void do_kill(pid_t pid)
     do_unblock_all(&pcb_to_kill->wait_queue);
 
     reuse_stack[++reuse_stack_top] = pcb_to_kill->kernel_stack_top;
-    reuse_stack[++reuse_stack_top] = pcb_to_kill->user_stack_top;
+    //reuse_stack[++reuse_stack_top] = pcb_to_kill->user_stack_top;
     queue_push(&exit_queue, (void *)pcb_to_kill);
     pcb_to_kill->which_queue=&exit_queue;
 
@@ -239,7 +246,7 @@ void do_exit(){
     do_unblock_all(&pcb_to_exit->wait_queue);
     
     reuse_stack[++reuse_stack_top] = pcb_to_exit->kernel_stack_top;
-    reuse_stack[++reuse_stack_top] = pcb_to_exit->user_stack_top;
+    //reuse_stack[++reuse_stack_top] = pcb_to_exit->user_stack_top;
     
     queue_push(&exit_queue, (void *)pcb_to_exit);
     pcb_to_exit->which_queue=&exit_queue;

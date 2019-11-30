@@ -33,12 +33,19 @@
 #include "queue.h"
 #include "lock.h"
 #include "irq.h"
+#include "mm.h"
 
-#define NUM_MAX_TASK 16
+#define NUM_MAX_TASK 5
 #define STACK_SIZE 0x10000
 #define STACK_MAX  0xa1000000
 #define STACK_MIN  0xa0f00000
+
+#define USER_STACK_MAX  0x10000000
+#define USER_STACK_MIN  0x00000000
+
 #define NUM_LOCK 16
+
+unsigned long rw_task1_input[6];
 
 /* used to save register infomation */
 typedef struct regs_context
@@ -113,13 +120,14 @@ typedef struct pcb
     mutex_lock_t *lock[NUM_LOCK];
     int lock_top;
 
-    pte_t pagetable[PTENTRY_NUM];
+    pte_t pagetable[PTE_NUM];
 
     queue_t * which_queue;
     queue_t wait_queue;
 
 } pcb_t;
 
+//pte_t pgtable[PTE_NUM];
 /* task information, used to init PCB */
 typedef struct task_info
 {
@@ -154,6 +162,7 @@ extern uint32_t lock_id;
 extern uint32_t reuse_stack[40];
 extern int reuse_stack_top;
 extern int stack_top;
+extern int usr_stack_top;
 
 void do_scheduler(void);
 void do_sleep(uint32_t);
@@ -173,5 +182,6 @@ void do_kill(pid_t);
 void do_exit(void);
 void do_wait(pid_t);
 int get_stack();
+int get_usr_stack();
 
 #endif

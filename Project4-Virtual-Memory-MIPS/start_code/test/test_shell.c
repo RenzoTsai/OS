@@ -29,6 +29,7 @@
 #include "stdio.h"
 #include "screen.h"
 #include "syscall.h"
+#include "sched.h"
 #define MAXLEN 100
 
 static void disable_interrupt()
@@ -58,32 +59,13 @@ static char read_uart_ch(void)
     return ch;
 }
 
-struct task_info task1 = {"task1", (uint32_t)&ready_to_exit_task, USER_PROCESS};
-struct task_info task2 = {"task2", (uint32_t)&wait_lock_task, USER_PROCESS};
-struct task_info task3 = {"task3", (uint32_t)&wait_exit_task, USER_PROCESS};
+//Running project_4 from shell is recommended. You can also run it from loadboot.
+struct task_info task1 = {"task1", (uint32_t)&drawing_task1, USER_PROCESS};
+struct task_info task2 = {"task2", (uint32_t)&rw_task1, USER_PROCESS};
 
-struct task_info task4 = {"task4", (uint32_t)&semaphore_add_task1, USER_PROCESS};
-struct task_info task5 = {"task5", (uint32_t)&semaphore_add_task2, USER_PROCESS};
-struct task_info task6 = {"task6", (uint32_t)&semaphore_add_task3, USER_PROCESS};
+struct task_info *test_tasks[2] = {&task1, &task2};
 
-struct task_info task7 = {"task7", (uint32_t)&producer_task, USER_PROCESS};
-struct task_info task8 = {"task8", (uint32_t)&consumer_task1, USER_PROCESS};
-struct task_info task9 = {"task9", (uint32_t)&consumer_task2, USER_PROCESS};
-
-struct task_info task10 = {"task10", (uint32_t)&barrier_task1, USER_PROCESS};
-struct task_info task11 = {"task11", (uint32_t)&barrier_task2, USER_PROCESS};
-struct task_info task12 = {"task12", (uint32_t)&barrier_task3, USER_PROCESS};
-
-struct task_info task13 = {"SunQuan",(uint32_t)&SunQuan, USER_PROCESS};
-struct task_info task14 = {"LiuBei", (uint32_t)&LiuBei, USER_PROCESS};
-struct task_info task15 = {"CaoCao", (uint32_t)&CaoCao, USER_PROCESS};
-
-static struct task_info *test_tasks[16] = {&task1, &task2, &task3,
-                                           &task4, &task5, &task6,
-                                           &task7, &task8, &task9,
-                                           &task10, &task11, &task12,
-                                           &task13, &task14, &task15};
-static int num_test_tasks = 15;
+int num_test_tasks = 2;
 
 void process_cmd(uint32_t argc, char argv[][15])
 {
@@ -95,9 +77,7 @@ void process_cmd(uint32_t argc, char argv[][15])
             sys_clear();
         else if(!strcmp(argv[0], "exit"))
             sys_exit();
-        else if(!strcmp(argv[0], "egg")){
-            drawing_task2();
-        }
+        
 
         else
             printf("Unknown command!\n");
@@ -116,6 +96,15 @@ void process_cmd(uint32_t argc, char argv[][15])
         }
         else
             printf("Unknown command!\n");
+    }
+    else if( argc == 6){
+        int j;
+        for(j=0;j<6;j++){
+            rw_task1_input[j]=hextoi(argv[j]);
+            printf("%d\n",rw_task1_input[j]);
+        }
+        sys_spawn(test_tasks[1]);
+        printf("exec process[1]\n");
     }
     else if(argc != 0)
         printf("Unknown command!\n");

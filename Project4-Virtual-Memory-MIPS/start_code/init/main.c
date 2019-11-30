@@ -32,6 +32,7 @@
 #include "common.h"
 #include "syscall.h"
 #include "time.h"
+#include "sync.h"
 #include "mm.h"
 
 queue_t ready_queue;
@@ -44,21 +45,50 @@ uint32_t lock_id;
 uint32_t reuse_stack[40];
 int reuse_stack_top = -1;
 int stack_top = STACK_MAX;
+int usr_stack_top = USER_STACK_MAX;
 
 static void init_page_table()
 {
-	free_pgframe(0x1000000, 0x2000000);
+	int i;
+	for(i=0;i<PTE_NUM;i++){
+		pgtable[i]=PTE_C<<3|PTE_D<<2|PTE_V<<1|PTE_G;
+	}
+	uint32_t vpn2=0x10000;
+	uint32_t epfn=3;
+	for(i=0;i<TLB_NUM;i++,vpn2++,epfn++){
+		pgtable[vpn2<<13]=epfn<<6|PTE_C<<3|PTE_D<<2|PTE_V<<1|PTE_G;
+		pgtable[(vpn2<<13)|(1<<12)]=epfn<<6|PTE_C<<3|PTE_D<<2|PTE_V<<1|PTE_G;		
+	}
 }
 
+static void init_TLB()
+{
+	int i;
+	uint32_t vpn2=0x10000;
+	uint32_t asid=0,pagemask=0;
+	uint32_t index=0;
+	uint32_t epfn=3;
+	for(i=0;i<TLB_NUM;i++,vpn2++,index++,epfn++){
+		set_cp0_entryhi(vpn2<<13|asid&0xff);
+		set_cp0_entrylo0(epfn<<6|PTE_C<<3|PTE_D<<2|PTE_V<<1|PTE_G);
+		epfn++;
+		set_cp0_entrylo1(epfn<<6|PTE_C<<3|PTE_D<<2|PTE_V<<1|PTE_G);		
+		set_cp0_pagemask(pagemask);
+		set_cp0_index(index);
+		asm volatile("tlbwi");
+	}
+	
+}
 
 static void init_memory()
 {
-	emptylist.head = emptylist.tail = NULL;
-	fulllist.head  = fulllist.tail  = NULL;
-	init_page_table(); 
+	queue_init(&emptylist);
+	queue_init(&fulllist);
+	free_pgframe(0x1000000, 0x2000000); //init page frame
+	//init_page_table(); 
 	//In task1&2, page table is initialized completely with address mapping, but only virtual pages in task3.
-	init_TLB();		    //only used in P4 task1
-	init_swap();		//only used in P4 bonus: Page swap mechanism
+	//init_TLB();		    //only used in P4 task1
+	//init_swap();		//only used in P4 bonus: Page swap mechanism
 }
 
 static void init_pcb()

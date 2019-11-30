@@ -88,11 +88,23 @@ LEAF(get_cp0_entrylo0)
     nop
 END(get_cp0_entrylo0)
 
+LEAF(set_cp0_entrylo0)
+    mtc0    a0, CP0_ENTRYLO0
+    jr      ra
+    nop
+END(set_cp0_entrylo0)
+
 LEAF(get_cp0_entrylo1)
     mfc0    v0, CP0_ENTRYLO1
     jr      ra
     nop
 END(get_cp0_entrylo1)
+
+LEAF(set_cp0_entrylo1)
+    mtc0    a0, CP0_ENTRYLO1
+    jr      ra
+    nop
+END(set_cp0_entrylo1)
 
 LEAF(get_cp0_index)
     mfc0    v0, CP0_INDEX
@@ -100,17 +112,19 @@ LEAF(get_cp0_index)
     nop
 END(get_cp0_index)
 
-LEAF(set_cp0_entrylo0)
-    mtc0    a0, CP0_ENTRYLO0
-    jr      ra
-    nop
-END(set_cp0_entrylo0)
 
-LEAF(set_cp0_entrylo1)
-    mtc0    a0, CP0_ENTRYLO1
+LEAF(set_cp0_index)
+    mtc0    a0, CP0_INDEX
     jr      ra
     nop
-END(set_cp0_entrylo1)
+END(set_cp0_index)
+
+
+LEAF(set_cp0_pagemask)
+    mtc0    a0, CP0_PAGEMASK
+    jr      ra
+    nop
+END(set_cp0_pagemask)
 
 
 .macro SAVE_CONTEXT offset
@@ -225,10 +239,12 @@ TLBexception_handler_begin:
     //jmp exception_handler[i] which decided by CP0_CAUSE
 
     CLI
+    .set noat
     SAVE_CONTEXT(USER)
     mtc0    zero, CP0_PAGEMASK
     jal     do_TLB_Helper
     nop
+    .set noat
     RESTORE_CONTEXT(USER)
     STI
     eret
@@ -237,8 +253,10 @@ TLBexception_handler_end:
 END(TLBexception_handler_entry)
 
 NESTED(do_scheduler, 0, ra)
+    .set noat
     SAVE_CONTEXT(KERNEL)
     jal     scheduler
+    .set noat
     RESTORE_CONTEXT(KERNEL)
     jr      ra
 END(do_scheduler)
@@ -247,9 +265,15 @@ END(do_scheduler)
 .global exception_handler_end
 .global reset_cp0
 
+
+.global TLBexception_handler_entry
+.global TLBexception_handler_begin
+.global TLBexception_handler_end
+
 NESTED(exception_handler_entry, 0, sp)   
 exception_handler_begin:
     CLI
+    .set noat
     SAVE_CONTEXT(USER)
     mfc0 k0, CP0_CAUSE
     andi k0, k0,CAUSE_EXCCODE
@@ -276,7 +300,7 @@ reset_cp0:
     mtc0    zero, CP0_COUNT
     li      k0, 100000
     mtc0    k0, CP0_COMPARE
-
+    .set noat
     RESTORE_CONTEXT(USER)
     STI
     eret
@@ -293,7 +317,7 @@ NESTED(handle_syscall, 0, sp)
     addiu   sp, sp, -16
     jal     system_call_helper
     addiu   sp, sp, 16
-
+    .set noat
     RESTORE_CONTEXT(USER)
     STI
     eret
@@ -302,7 +326,7 @@ NESTED(handle_syscall, 0, sp)
 END(handle_syscall)
 
 NESTED(handle_other, 0, sp)
-
+    .set noat
     RESTORE_CONTEXT(USER)
     STI
     eret
