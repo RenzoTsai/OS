@@ -11,7 +11,7 @@ void do_page_fault();
 
 
 #define PGSIZE           4096    //page: 4KB
-#define PTE_NUM          1024*32 //USR STACK: 0 - 0x80000000 
+#define PTE_NUM          1024*128 //USR STACK: 0 - 0x80000000 
 
 // 31                               6 5  3  2   1   0 
 // +-----------------+---------------+----+---+---+---+

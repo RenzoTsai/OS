@@ -8,5 +8,6 @@ void drawing_task1(void);
 
 //test memory
 void rw_task1(void);
+void rw_task2(void);
 
 #endif

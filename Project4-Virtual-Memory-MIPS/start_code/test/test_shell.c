@@ -62,12 +62,12 @@ static char read_uart_ch(void)
 //Running project_4 from shell is recommended. You can also run it from loadboot.
 struct task_info task1 = {"task1", (uint32_t)&drawing_task1, USER_PROCESS};
 struct task_info task2 = {"task2", (uint32_t)&rw_task1, USER_PROCESS};
+struct task_info task3 = {"task3", (uint32_t)&rw_task2, USER_PROCESS};
+struct task_info *test_tasks[3] = {&task1, &task2, &task3};
 
-struct task_info *test_tasks[2] = {&task1, &task2};
+int num_test_tasks = 3;
 
-int num_test_tasks = 2;
-
-void process_cmd(uint32_t argc, char argv[][15])
+void process_cmd(uint32_t argc, char argv[6][15])
 {
     if(argc == 1){
         if(!strcmp(argv[0], "ps")){
@@ -77,8 +77,6 @@ void process_cmd(uint32_t argc, char argv[][15])
             sys_clear();
         else if(!strcmp(argv[0], "exit"))
             sys_exit();
-        
-
         else
             printf("Unknown command!\n");
     }
@@ -97,24 +95,24 @@ void process_cmd(uint32_t argc, char argv[][15])
         else
             printf("Unknown command!\n");
     }
+
     else if( argc == 6){
         int j;
+        printf("argc=6,input:\n");
         for(j=0;j<6;j++){
-            rw_task1_input[j]=hextoi(argv[j]);
-            printf("%d\n",rw_task1_input[j]);
+            rw_task1_input[j]= hextoi(argv[j]);
+            printf("%x\n",rw_task1_input[j]);
         }
-        sys_spawn(test_tasks[1]);
-        printf("exec process[1]\n");
     }
     else if(argc != 0)
-        printf("Unknown command!\n");
+        printf("Unknown command! [argc =%d]\n",argc);
 }
 
 void test_shell()
 {
-    char cmd[20];
+    char cmd[80];
     uint32_t i = 0, argc, j, k;
-    char argv[3][15];
+    char argv[6][15];
 
     /* terminal */
     sys_move_cursor(0, SCREEN_HEIGHT / 2);

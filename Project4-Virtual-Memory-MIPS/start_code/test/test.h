@@ -5,6 +5,6 @@
 #include "test_project4/test4.h"
 #include "sched.h"
 
-extern struct task_info *test_tasks[2];
+extern struct task_info *test_tasks[3];
 
 #endif

@@ -35,13 +35,13 @@
 #include "irq.h"
 #include "mm.h"
 
-#define NUM_MAX_TASK 5
-#define STACK_SIZE 0x10000
+#define NUM_MAX_TASK 6
+#define STACK_SIZE 0x1000
 #define STACK_MAX  0xa1000000
 #define STACK_MIN  0xa0f00000
 
-#define USER_STACK_MAX  0x10000000
-#define USER_STACK_MIN  0x00000000
+#define USER_STACK_MAX  0x1000000
+#define USER_STACK_MIN  0x0000000
 
 #define NUM_LOCK 16
 
@@ -183,5 +183,7 @@ void do_exit(void);
 void do_wait(pid_t);
 int get_stack();
 int get_usr_stack();
+
+void do_handle_other(uint32_t, uint32_t);
 
 #endif

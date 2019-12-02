@@ -77,6 +77,7 @@ extern void TLBexception_handler_end(void);
 
 
 extern void handle_int(void);
+extern void handle_TLB(void);
 extern void handle_syscall(void);
 extern void handle_other(void);
 

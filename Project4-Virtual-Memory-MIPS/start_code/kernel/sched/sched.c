@@ -61,6 +61,7 @@ void scheduler(void)
         position->priority ++;
         position = position->next;
     }
+    TLB_flush();
 }
 
 
@@ -270,5 +271,9 @@ void do_wait(pid_t pid)
         do_scheduler();
     }
     
+}
+
+void do_handle_other(uint32_t status, uint32_t cause){
+    //do_print("It's other exception!          status:%x cause:%x\n",status,cause);
 }
 

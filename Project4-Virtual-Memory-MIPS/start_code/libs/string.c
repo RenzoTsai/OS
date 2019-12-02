@@ -34,8 +34,10 @@ void bzero(void *dest, uint32_t len)
 
 int strcmp(char *str1, char *str2)
 {
-	while (*str1 && *str2 && (*str1++ == *str2++))
+	while (*str1 && *str2 && (*str1 == *str2))
 	{
+		str1++;
+		str2++;
 	};
 
 	return (*str1) - (*str2);
@@ -92,7 +94,10 @@ int hextoi(char *str)
 		;
 	i++;
 	for(; i < len; i++)
-		num = num*16 + str[i]-'0';
+		if('0'<=str[i]&&str[i]<='9')
+			num = num*16 + str[i]-'0';
+		else if('a'<=str[i]&&str[i]<='f')
+			num = num*16 + str[i]-'a'+10;
 	
 	return num;
 }

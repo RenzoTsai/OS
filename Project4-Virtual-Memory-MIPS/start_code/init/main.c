@@ -49,16 +49,16 @@ int usr_stack_top = USER_STACK_MAX;
 
 static void init_page_table()
 {
-	int i;
-	for(i=0;i<PTE_NUM;i++){
-		pgtable[i]=PTE_C<<3|PTE_D<<2|PTE_V<<1|PTE_G;
-	}
-	uint32_t vpn2=0x10000;
-	uint32_t epfn=3;
-	for(i=0;i<TLB_NUM;i++,vpn2++,epfn++){
-		pgtable[vpn2<<13]=epfn<<6|PTE_C<<3|PTE_D<<2|PTE_V<<1|PTE_G;
-		pgtable[(vpn2<<13)|(1<<12)]=epfn<<6|PTE_C<<3|PTE_D<<2|PTE_V<<1|PTE_G;		
-	}
+	// int i;
+	// for(i=0;i<PTE_NUM;i++){
+	// 	pgtable[i]=PTE_C<<3|PTE_D<<2|PTE_V<<1|PTE_G;
+	// }
+	// uint32_t vpn2=0x10000;
+	// uint32_t epfn=3;
+	// for(i=0;i<TLB_NUM;i++,vpn2++,epfn++){
+	// 	pgtable[vpn2<<13]=epfn<<6|PTE_C<<3|PTE_D<<2|PTE_V<<1|PTE_G;
+	// 	pgtable[(vpn2<<13)|(1<<12)]=epfn<<6|PTE_C<<3|PTE_D<<2|PTE_V<<1|PTE_G;		
+	// }
 }
 
 static void init_TLB()
@@ -84,7 +84,8 @@ static void init_memory()
 {
 	queue_init(&emptylist);
 	queue_init(&fulllist);
-	free_pgframe(0x1000000, 0x2000000); //init page frame
+	TLB_flush();
+	free_pgframe(0x01000000, 0x02000000); //init page frame
 	//init_page_table(); 
 	//In task1&2, page table is initialized completely with address mapping, but only virtual pages in task3.
 	//init_TLB();		    //only used in P4 task1
@@ -139,6 +140,8 @@ static void init_exception_handler()
 	exception_handler[0] = (uint32_t)handle_int;
 	for(i=1;i<32;i++)
 		exception_handler[i] = (uint32_t)handle_other;
+	exception_handler[2] = (uint32_t)handle_TLB;
+	exception_handler[3] = (uint32_t)handle_TLB;
 	exception_handler[8] = (uint32_t)handle_syscall;
 }
 
@@ -156,10 +159,11 @@ static void init_exception()
 	
 	
 	// 3. Copy the level 2 exception handling code to 0x80000180
+	bzero((void *)BEV0_EBASE, BEV0_OFFSET);
 	memcpy((void *)BEV0_EBASE, TLBexception_handler_begin, TLBexception_handler_end-TLBexception_handler_begin);
-	memcpy((void *)BEV1_EBASE, TLBexception_handler_begin, TLBexception_handler_end-TLBexception_handler_begin);
+	//memcpy((void *)BEV1_EBASE, TLBexception_handler_begin, TLBexception_handler_end-TLBexception_handler_begin);
 	memcpy((void *)(BEV0_EBASE+BEV0_OFFSET), exception_handler_entry, exception_handler_end-exception_handler_begin);
-	memcpy((void *)(BEV1_EBASE+BEV1_OFFSET), exception_handler_entry, exception_handler_end-exception_handler_begin);
+	//memcpy((void *)(BEV1_EBASE+BEV1_OFFSET), exception_handler_entry, exception_handler_end-exception_handler_begin);
 
 	// 4. reset CP0_COMPARE & CP0_COUNT register
 	SET_CP0_COUNT(0);
