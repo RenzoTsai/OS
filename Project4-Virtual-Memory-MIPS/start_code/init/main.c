@@ -45,7 +45,7 @@ uint32_t lock_id;
 uint32_t reuse_stack[40];
 int reuse_stack_top = -1;
 int stack_top = STACK_MAX;
-int usr_stack_top = USER_STACK_MAX;
+
 
 static void init_page_table()
 {

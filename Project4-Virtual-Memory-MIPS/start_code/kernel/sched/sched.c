@@ -6,6 +6,7 @@
 #include "screen.h"
 
 pcb_t pcb[NUM_MAX_TASK];
+int usr_stack_top = USER_STACK_MAX;
 
 /* current running task PCB */
 pcb_t *current_running;
@@ -188,6 +189,7 @@ void do_spawn(task_info_t *task){
     new_pcb->kernel_context.cp0_status=0x10008003;
 
     new_pcb->user_stack_top=new_pcb->user_context.regs[29]=get_stack();
+    //do_print("addr:%x\n",new_pcb->user_stack_top);
     new_pcb->user_context.regs[31]=task->entry_point;
     new_pcb->user_context.cp0_epc=task->entry_point;
     new_pcb->user_context.cp0_status=0x10008003;

@@ -35,7 +35,7 @@ typedef struct pgframe {
     struct pgframe *next;
 } pgframe_t;
 
-pgframe_t pmem[PAGE_FRAMES_NUM];
+pgframe_t pf_group[PAGE_FRAMES_NUM];
 queue_t emptylist;
 queue_t fulllist;
 void free_pgframe(uint32_t, uint32_t);

@@ -31,7 +31,7 @@ pgframe_t *palloc()
     return item;
 }
 
-void pfree(pgframe_t *item)
+void pgframe_init(pgframe_t *item)
 {
     if(item->prev && item->next)
     {
@@ -79,10 +79,10 @@ void free_pgframe(uint32_t p_start, uint32_t p_end)
     uint32_t p, i;
     for(i = 0,p = p_start; p + PGSIZE < p_end; p += PGSIZE, i++)
     {
-        pmem[i].paddr = p;
-        pmem[i].vpte = NULL;
-        pmem[i].prev = pmem[i].next  = NULL;
-        pfree(&pmem[i]);
+        pf_group[i].paddr = p;
+        pf_group[i].vpte = NULL;
+        pf_group[i].prev = pf_group[i].next  = NULL;
+        pgframe_init(&pf_group[i]);
     }
 }
 
@@ -98,14 +98,20 @@ void do_TLB_Helper()
     asm volatile("tlbp");  //invalid 在填充TLB项之前，使用TLBP指令来找出匹配但是无效的那一项的index值
     uint32_t index = get_cp0_index();
     uint32_t entrylo0, entrylo1;
+    //do_print("current_running:%d entryhi:%d V:%d G:%d \n",(current_running->pid& 0xff),entryhi & 0xff,(current_running->pagetable[context >> 12] & (PTE_V<<1)),(current_running->pagetable[context >> 12] & (PTE_G)));
+ 
     if(index & 0x80000000) {  //TLBP没有成功时P置 1
         //TLB refill
+        // if(((current_running->pid& 0xff)!=entryhi & 0xff) && (current_running->pagetable[context >> 12] & (PTE_V<<1)) && !(current_running->pagetable[context >> 12] & (PTE_G))){
+        //     do_print("ASID ERROR! current_running:%d entryhi:%d V:%d G:%d \n",(current_running->pid& 0xff),entryhi & 0xff,(current_running->pagetable[context >> 12] & (PTE_V<<1)),(current_running->pagetable[context >> 12] & (PTE_G)));
+        //     do_exit();
+        // }
         entryhi = (context &0xffffff00) | (current_running->pid& 0xff);
         set_cp0_entryhi(entryhi);
           // entrylo0 = (current_running->pagetable[context >> 12]| PTE_C<<3 | PTE_D<<2 | PTE_V<<1 )&(0xfffffffe) ;
           // entrylo1 = (current_running->pagetable[context >> 12 | 1] | PTE_C<<3 | PTE_D<<2 | PTE_V<<1)&(0xfffffffe) ;
-        entrylo0 = (current_running->pagetable[context >> 12]| (PTE_C<<3)  ) ;
-        entrylo1 = (current_running->pagetable[context >> 12 | 1] | (PTE_C<<3) );
+        entrylo0 = (current_running->pagetable[context >> 12]| (PTE_C<<3)  ) &(0xfffffffe);
+        entrylo1 = (current_running->pagetable[context >> 12 | 1] | (PTE_C<<3) ) &(0xfffffffe);
         set_cp0_entrylo0(entrylo0);
         set_cp0_entrylo1(entrylo1);
         asm volatile("tlbwr"); //随机填充TLB
@@ -131,8 +137,10 @@ void do_TLB_Helper()
         }
          // entrylo0 = current_running->pagetable[context >> 12] &(0xfffffffe);
          // entrylo1 = current_running->pagetable[context >> 12 | 1]&(0xfffffffe);
+        entryhi = (context &0xffffff00) | (current_running->pid& 0xff);
         entrylo0 = current_running->pagetable[context >> 12] ;
         entrylo1 = current_running->pagetable[context >> 12 | 1];
+        //set_cp0_entryhi(entryhi);
         set_cp0_entrylo0(entrylo0);
         set_cp0_entrylo1(entrylo1);
         asm volatile("tlbwi"); //根据INDEX填充TLB

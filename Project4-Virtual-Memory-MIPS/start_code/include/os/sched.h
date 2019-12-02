@@ -35,13 +35,13 @@
 #include "irq.h"
 #include "mm.h"
 
-#define NUM_MAX_TASK 6
+#define NUM_MAX_TASK 4
 #define STACK_SIZE 0x1000
 #define STACK_MAX  0xa1000000
 #define STACK_MIN  0xa0f00000
 
-#define USER_STACK_MAX  0x1000000
-#define USER_STACK_MIN  0x0000000
+#define USER_STACK_MAX  0x20000000
+#define USER_STACK_MIN  0x00000
 
 #define NUM_LOCK 16
 
