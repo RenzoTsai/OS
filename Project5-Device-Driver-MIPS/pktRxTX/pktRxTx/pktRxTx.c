@@ -67,8 +67,8 @@ int interval = 1;      /* interval  time between two sending action*/
 int sendnum = 3;       /* number of packets for a sending request*/
 
 /* fixed MAC address for now */
-unsigned char src_mac_addr[6] = { 0x90, 0xe2, 0xba, 0x15, 0xcd, 0xd0 };
-unsigned char dest_mac_addr[6] = { 0x10, 0x1b, 0x54, 0x84, 0x83, 0xd6 };
+unsigned char src_mac_addr[6] = { 0x70, 0x5a, 0x0f, 0xd3, 0x42, 0x0e};
+unsigned char dest_mac_addr[6] = {0x00, 0x55, 0x7b, 0xb5, 0x7d, 0xf7};
 
 static void log_packets(FILE ** fp, char *fname, int *fidx, const u_char * buf,
 	int len);
