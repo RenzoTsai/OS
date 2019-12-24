@@ -30,6 +30,7 @@
 #include "screen.h"
 #include "syscall.h"
 #include "sched.h"
+#include "fs.h"
 #define MAXLEN 100
 
 static void disable_interrupt()
@@ -60,23 +61,41 @@ static char read_uart_ch(void)
 }
 
 //Running project_4 from shell is recommended. You can also run it from loadboot.
-struct task_info task1 = {"task1", (uint32_t)&mac_init_task, USER_PROCESS};
-struct task_info task2 = {"task2", (uint32_t)&mac_send_task, USER_PROCESS};
-struct task_info task3 = {"task3", (uint32_t)&mac_recv_task, USER_PROCESS};
-struct task_info *test_tasks[3] = {&task1, &task2, &task3};
+struct task_info task1 = {"task1", (uint32_t)&test_fs, USER_PROCESS};
+// struct task_info task2 = {"task2", (uint32_t)&mac_send_task, USER_PROCESS};
+// struct task_info task3 = {"task3", (uint32_t)&mac_recv_task, USER_PROCESS};
+struct task_info *test_tasks[1] = {&task1};
 
 int num_test_tasks = 3;
 
 void process_cmd(uint32_t argc, char argv[6][15])
 {
     if(argc == 1){
-        if(!strcmp(argv[0], "ps")){
+        if(!strcmp(argv[0], "ps"))
+        {
             sys_ps();
+        }
+        else if(!strcmp(argv[0], "cd"))
+        {
+            sys_sleep(1);
+            argv[1][0] = '\0';
+            sys_cd((char *)argv[1]);
+        }
+        else if(!strcmp(argv[0], "ls"))
+        {
+            sys_sleep(1);
+            argv[1][0] = '\0';
+            sys_ls((char *)argv[1]);
+           // printf("Successed! cur_inum = %d\n", cur_inode->inum);
         }
         else if(!strcmp(argv[0], "clear"))
             sys_clear();
         else if(!strcmp(argv[0], "exit"))
             sys_exit();
+        else if(!strcmp(argv[0], "mkfs"))
+            sys_mkfs();
+        else if(!strcmp(argv[0], "statfs"))
+            sys_statfs();
         else
             printf("Unknown command!\n");
     }
@@ -86,6 +105,44 @@ void process_cmd(uint32_t argc, char argv[6][15])
         {
             sys_spawn(test_tasks[pid-1]);
             printf("exec process[%d]\n", pid);
+        }
+        else if(!strcmp(argv[0], "kill"))
+        {
+            sys_kill(pid);
+            //printf("kill process pid = %d\n", pid);
+        }
+        else if(!strcmp(argv[0], "mkdir"))
+        {
+            sys_sleep(1);
+            sys_mkdir((char *)argv[1]);
+            //printf("Successed! cur_inum = %d\n", cur_inode->inum);
+        }
+        else if(!strcmp(argv[0], "rmdir"))
+        {
+            sys_rmdir((char *)argv[1]);
+            //printf("Successed! cur_inum = %d\n", cur_inode->inum);
+        }
+        else if(!strcmp(argv[0], "touch"))
+        {
+            sys_touch((char *)argv[1]);
+            //printf("Successed! cur_inum = %d\n", cur_inode->inum);
+        }
+        else if(!strcmp(argv[0], "cd"))
+        {
+            sys_sleep(1);
+            sys_cd((char *)argv[1]);
+            //printf("Successed! cur_inum = %d\n", cur_inode->inum);
+        }
+        else if(!strcmp(argv[0], "ls"))
+        {
+            sys_sleep(1);
+            sys_ls((char *)argv[1]);
+            //printf("Successed! cur_inum = %d\n", cur_inode->inum);
+        }
+        else if(!strcmp(argv[0], "cat"))
+        {
+            sys_cat((char *)argv[1]);
+            //printf("Successed! cur_inum = %d\n", cur_inode->inum);
         }
         else if(!strcmp(argv[0], "kill"))
         {

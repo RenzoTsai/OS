@@ -173,8 +173,10 @@ END(SET_CP0_COMPARE)
 NESTED(do_scheduler, 0, ra)
     SAVE_CONTEXT(KERNEL)
     jal     scheduler
+    nop
     RESTORE_CONTEXT(KERNEL)
     jr      ra
+    nop
 END(do_scheduler)
 
 .global exception_handler_begin
@@ -184,14 +186,13 @@ END(do_scheduler)
 NESTED(exception_handler_entry, 0, sp)   
 exception_handler_begin:
     CLI
-    SAVE_CONTEXT(USER)
     mfc0 k0, CP0_CAUSE
     andi k0, k0,CAUSE_EXCCODE
     la   k1, exception_handler
     add  k0,k0,k1
     lw   k0, 0(k0)
     jr   k0
-    
+    nop
 
     // TODO close interrupt
     // jmp exception_handler[i] which decided by CP0_CAUSE
@@ -200,17 +201,18 @@ exception_handler_end:
 END(exception_handler_entry)
 
 NESTED(handle_int, 0, sp)
+    SAVE_CONTEXT(USER)
     mfc0 a0, CP0_STATUS
     mfc0 a1, CP0_CAUSE
     addi sp, sp, -8
     jal  interrupt_helper
+    nop
     addi sp, sp, 8
 reset_cp0:
-    mtc0    zero, CP0_COUNT
-    li      k0, 100000
-    mtc0    k0, CP0_COMPARE
-
     RESTORE_CONTEXT(USER)
+    mtc0    zero, CP0_COUNT
+    li      k0, 200000
+    mtc0    k0, CP0_COMPARE
     STI
     eret
 
@@ -219,12 +221,14 @@ reset_cp0:
 END(handle_int)
 
 NESTED(handle_syscall, 0, sp)
+    SAVE_CONTEXT(USER)
     move     a3, a2
     move     a2, a1
     move     a1, a0
     move     a0, v0
     addiu   sp, sp, -16
     jal     system_call_helper
+    nop
     addiu   sp, sp, 16
     RESTORE_CONTEXT(USER)
     STI

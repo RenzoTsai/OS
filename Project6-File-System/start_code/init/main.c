@@ -34,6 +34,7 @@
 #include "time.h"
 #include "sync.h"
 #include "mac.h"
+#include "fs.h"
 
 queue_t ready_queue;
 queue_t exit_queue;
@@ -147,16 +148,22 @@ static void init_exception_handler()
 
 static void init_exception()
 {
+	//do_print("hello1");
 	init_exception_handler();
 	// 1. Get CP0_STATUS
 	initial_cp0_status = GET_CP0_STATUS();
 
 	// 2. Disable all interrupt
-	initial_cp0_status |= 0x1000ff01;
-	initial_cp0_status ^= 0x1;
+	// initial_cp0_status |= 0x1000ff01;
+	// initial_cp0_status ^= 0x1;
+	// SET_CP0_STATUS(initial_cp0_status);
+	// //SET INTERRUPT ENABLE FOR FUTURE USING
+	// initial_cp0_status |= 0x1;
+
+	initial_cp0_status |= 0x10008003;
 	SET_CP0_STATUS(initial_cp0_status);
 	//SET INTERRUPT ENABLE FOR FUTURE USING
-	initial_cp0_status |= 0x1;
+	initial_cp0_status = 0x10008001;
 	
 	
 	// 3. Copy the level 2 exception handling code to 0x80000180
@@ -208,6 +215,18 @@ static void init_syscall(void)
 	syscall[SYSCALL_NET_SEND   		   ] = (int (*)()) & do_net_send;
 	syscall[SYSCALL_NET_RECV 		   ] = (int (*)()) & do_net_recv;
 	syscall[SYSCALL_WAIT_RECV_PACKAGE  ] = (int (*)()) & do_wait_recv_package;
+	syscall[SYSCALL_MKFS               ] = (int (*)()) & do_mkfs;
+	syscall[SYSCALL_STATFS             ] = (int (*)()) & do_statfs;
+	syscall[SYSCALL_MKDIR              ] = (int (*)()) & do_mkdir;
+	syscall[SYSCALL_RMDIR              ] = (int (*)()) & do_rmdir;
+	syscall[SYSCALL_CD                 ] = (int (*)()) & do_cd;
+	syscall[SYSCALL_LS                 ] = (int (*)()) & do_ls;
+	syscall[SYSCALL_TOUCH              ] = (int (*)()) & do_touch;
+	syscall[SYSCALL_CAT                ] = (int (*)()) & do_cat;
+	syscall[SYSCALL_FOPEN              ] = (int (*)()) & do_fopen;
+	syscall[SYSCALL_FREAD              ] = (int (*)()) & do_fread;
+	syscall[SYSCALL_FWRITE             ] = (int (*)()) & do_fwrite;
+	syscall[SYSCALL_FCLOSE              ] = (int (*)()) & do_close;
 	// init system call table.
 }
 
@@ -241,7 +260,10 @@ void __attribute__((section(".entry_function"))) _start(void)
 	printk("> [INIT] SCREEN initialization succeeded.\n");
 	screen_clear(0,SCREEN_HEIGHT);
 
-	
+	if(init_fs() == 0)
+		printk("> [INIT] No File System.\n");	
+	else
+		printk("> [INIT] File System initialization succeeded.\n");
 	
 	// TODO Enable interrupt
 	SET_CP0_STATUS(initial_cp0_status);

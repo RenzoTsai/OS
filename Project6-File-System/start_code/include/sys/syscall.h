@@ -74,6 +74,18 @@
 #define SYSCALL_NET_RECV 34
 #define SYSCALL_NET_SEND 35
 #define SYSCALL_WAIT_RECV_PACKAGE 36
+#define SYSCALL_MKFS 37
+#define SYSCALL_STATFS 38
+#define SYSCALL_CD 39
+#define SYSCALL_MKDIR 40
+#define SYSCALL_RMDIR 41
+#define SYSCALL_LS 42
+#define SYSCALL_TOUCH 43
+#define SYSCALL_CAT 44
+#define SYSCALL_FOPEN 45
+#define SYSCALL_FREAD 46
+#define SYSCALL_FWRITE 47
+#define SYSCALL_FCLOSE 48  
 /* syscall function pointer */
 int (*syscall[NUM_SYSCALLS])();
 
@@ -126,5 +138,19 @@ void condition_signal(condition_t *condition);
 void condition_broadcast(condition_t *condition);
 
 void sys_wait_recv_package();
+
+
+int sys_mkfs();
+int sys_mkdir(char *sname);
+int sys_rmdir(char *sname);
+int sys_cd(char *dir);
+void sys_statfs();
+int sys_ls(char *dir);
+int sys_touch(char *sname);
+int sys_cat(char *sname);
+int sys_fopen(char *sname, int access);
+int sys_fread(int fd, char *buff, int size);
+int sys_fwrite(int fd, char *buff, int size);
+void sys_close(int fd);
 
 #endif

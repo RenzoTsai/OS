@@ -29,6 +29,7 @@
 #ifndef INCLUDE_SCHEDULER_H_
 #define INCLUDE_SCHEDULER_H_
 
+#include "fs.h"
 #include "type.h"
 #include "queue.h"
 #include "lock.h"
@@ -74,6 +75,15 @@ typedef enum {
     USER_THREAD,
 } task_type_t;
 
+#define MAX_FD_NUM     10
+typedef struct filedesc{
+    uint32_t inum;
+    uint32_t access;
+    uint32_t start_cur_pos;
+    uint32_t r_cur_pos;
+    uint32_t w_cur_pos;
+} filedesc_t;
+
 /* Process Control Block */
 typedef struct pcb
 {
@@ -115,6 +125,7 @@ typedef struct pcb
 
     queue_t * which_queue;
     queue_t wait_queue;
+    filedesc_t opfile[MAX_FD_NUM];
 
 } pcb_t;
 

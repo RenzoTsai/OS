@@ -81,26 +81,11 @@ static uint32_t printk_recv_buffer(uint32_t recv_buffer)
 {
 }
 
-// static uint32_t printf_recv_buffer(uint32_t recv_buffer,desc_t * recv_desc)
-// {
-//     int j, print_location = 4;
-//     sys_move_cursor(1, print_location + 1);
-//     printf(" %dth recv_buff: \n", ch_flag);
-//     if(recv_desc[ch_flag].tdes0 & 0xf8cf){
-//         invalid_num++;
-//         printf("Received invalid package. \n");
-//     }
-//     uint32_t *data = (uint32_t *)(recv_buffer + 0x400 * ch_flag);
-//     for(j = 0; j < 256; j++)
-//         printf("%x ", data[j]);
-//     printf("\n");
-// }
-
 static uint32_t printf_recv_buffer(uint32_t recv_buffer)
 {
     int i, print_location = 5;
     sys_move_cursor(1, print_location + 1);
-    uint32_t *data = recv_buffer;
+    uint32_t *data = (uint32_t *) recv_buffer;
     for(i = 0; i < 256; i++)
         printf("%x ", data[i]);
     printf("\n");
@@ -145,7 +130,7 @@ void mac_recv_handle(mac_t *test_mac)
     int ignore =0;
     while(ch_flag < 64+ignore){
         uint32_t *data = (uint32_t *)(test_mac->daddr + 0x400 * (ch_flag%64));
-        uint8_t *head =(uint32_t *)(test_mac->daddr + 0x400 * (ch_flag%64));
+        uint8_t *head =(uint8_t *)(test_mac->daddr + 0x400 * (ch_flag%64));
         if(!(head[0]==0x00&&head[1]==0x55&&head[2]==0x7b&&head[3]==0xb5&&head[4]==0x7d&&head[5]==0xf7) &&!(recv_desc[ch_flag%64].tdes0 & 0x80000000)){
            recv_desc[ch_flag%64].tdes0 = 0x80000000;  //在起始位置重置无效包数目的描述符和寄存器
            reg_write_32(DMA_BASE_ADDR + 0x8, 1);

@@ -32,13 +32,23 @@ void bzero(void *dest, uint32_t len)
 	memset(dest, 0, len);
 }
 
+// int strcmp(char *str1, char *str2)
+// {
+// 	while (*str1 && *str2 && (*str1++ == *str2++))
+// 	{
+// 	};
+
+// 	return (*str1) - (*str2);
+// }
 int strcmp(char *str1, char *str2)
 {
-	while (*str1 && *str2 && (*str1++ == *str2++))
+	while (*str1 && *str2 && (*str1 == *str2))
 	{
-	};
-
-	return (*str1) - (*str2);
+		str1++;
+		str2++;
+		//printk("hh\n");
+	}
+ 	return (*str1) - (*str2);
 }
 
 int memcmp(char *str1, char *str2, uint32_t size)

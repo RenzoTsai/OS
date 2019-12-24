@@ -3,6 +3,7 @@
 #include "string.h"
 #include "test_fs.h"
 #include "syscall.h"
+#include "sched.h"
 
 static char buff[64];
 
