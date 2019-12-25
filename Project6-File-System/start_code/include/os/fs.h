@@ -37,6 +37,10 @@ typedef enum {
 //Magic number
 #define MAGICNUM    0x46534653          //"FS"
 
+#define IMODE_FILE      0
+#define IMODE_DENTRY    1
+
+
 //superblock
 typedef struct superblock{
     uint32_t magic_num; 

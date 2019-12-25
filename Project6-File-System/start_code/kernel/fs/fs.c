@@ -70,7 +70,7 @@ uint32_t alloc_datablock(){
     //uint32_t datablock_cur= valid_datablk_cur++;
     uint32_t datablock_cur = find_free_block();
     write_block_map(datablock_cur);
-    do_print("find block cur addr:%x\n",DATABLK_SD_ADDR + (datablock_cur-45)*0x1000);
+    //do_print("find block cur addr:%x\n",DATABLK_SD_ADDR + (datablock_cur-45)*0x1000);
     return DATABLK_SD_ADDR + (datablock_cur-45)*0x1000;
 }
 
@@ -101,7 +101,7 @@ void free_inode(uint32_t inode_id){     //free inode map
 
 void init_entry(uint32_t ptr, uint32_t cur_inode_id, uint32_t parent_inode_id)
 {
-    do_print("init_entry:\n");
+
     bzero(dbuf, sizeof(dbuf));
     strcpy((char *)dbuf[0].name, (char *)".");
     dbuf[0].type = 3;
@@ -109,11 +109,8 @@ void init_entry(uint32_t ptr, uint32_t cur_inode_id, uint32_t parent_inode_id)
     strcpy((char *)dbuf[1].name, (char *)"..");
     dbuf[1].type = 4;
     dbuf[1].inode_id = parent_inode_id;
-    do_print("1dbuf[1].inode_id:%d %x\n",dbuf[0].inode_id,ptr);
     sdwrite((char *)(dbuf), ptr, BLK_SZ);
-    do_print("2dbuf[1].inode_id:%d %x\n",dbuf[0].inode_id,ptr);
     sdread((char *)(dbuf), ptr, BLK_SZ);    
-    do_print("3dbuf[1].inode_id:%d %x\n",dbuf[0].inode_id,ptr);
 }
 
 int init_fs(){
@@ -186,11 +183,9 @@ int do_mkfs(){
     screen_reflush();
     blkmap = (uint8_t *)BLKMAP_ADDR;
     bzero((void *)blkmap, superblock->blockmap_num*0x200);
-    //sdwrite((char *)blkmap,BLKMAP_SD_ADDR, superblock->blockmap_num*0x200);
+    sdwrite((char *)blkmap,BLKMAP_SD_ADDR, superblock->blockmap_num*0x200);
     int cnt;
     init_block_map(45);
-    // write_block_map(0);
-    // write_block_map(4);
 
     do_print("[FS] Setting inode...                     \n");
     inode = (inode_t *)INODE_ADDR;
@@ -217,7 +212,6 @@ int do_mkfs(){
     screen_reflush();
 
     cur_inode = inode;
-
     return 1;
 
 }
@@ -246,13 +240,11 @@ void do_statfs(){
 }
 
 int do_mkdir(char *sname){
-    //do_print("hh0\n");
     if(superblock->magic_num != MAGICNUM){
         do_print("[ERROR] No File System!\n");
         return -1;
     }
     int i,j,k;
-    //do_print("hh1\n");
     for(i=0;i<cur_inode->num;i++){
         j = i / INODE_PERBLK;
         k = i % INODE_PERBLK;
@@ -287,7 +279,6 @@ int do_mkdir(char *sname){
         inode[i].direct[k] = 0;
     inode[i].direct[0]=alloc_datablock();
     write_block_inode(i);
-    do_print("ptr:%x j:%d\n",inode[i].direct[j]);
     init_entry(inode[i].direct[j],inode[i].inum,cur_inode->inum);
     do_print("Successed! inum:%d addr:%x\n", inode[i].inum,inode[i].direct[j]);
     return 1;    
@@ -322,11 +313,11 @@ int do_rmdir(char *sname){
     return 0;
 }
 char * get_head_dir(char *head,char *dir){
-    int i;
-    for(i=0;i<strlen(dir)&&dir[i]!='/';i++){
-        head[i]=dir[i];
+    int i=0,j;
+    for(j=0;i<strlen(dir)&&dir[i]!='/';i++,j++){
+        head[j]=dir[i];
     }
-    head[i++]='\0';
+    head[j++]='\0';
     return head;
 }
 
@@ -340,20 +331,27 @@ char * get_tail_dir(char *tail,char *dir){
     tail[j]='\0';
     return tail;
 }
-
-
-int do_cd(char *dir){
+int find=0;
+int find_path(char * dir){
+    static int dep=0;
     int inode_id_temp=cur_inode->inum;
-    if(superblock->magic_num != MAGICNUM){
-        do_print("[ERROR] No File System!\n");
-        return -1;
-    }
 
+    if(dep==0)
+        find=0;
+    
+    if(dir[0]=='/'){
+        cur_inode=&inode[0];
+        if(strlen(dir)==1)
+            return 1;
+        int m;
+        for(m=0;m<strlen(dir);m++)
+            dir[m]=dir[m+1];
+    }
     get_head_dir(head_dir,dir);
 	get_tail_dir(tail_dir,dir);
-
+    do_print("dep:%d head: %s, ?:%d, tail:%s  \n",dep,head_dir,tail_dir[0]=='\0',tail_dir);
     if(head_dir[0]=='\0')
-		return 1;
+		return 0;
 
     int i,j,k;
     for(i=0;i<cur_inode->num;i++){
@@ -361,41 +359,105 @@ int do_cd(char *dir){
         k = i % INODE_PERBLK;
         if(k==0){
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
+            do_print("dbuf:%s cur_inum:%d\n",dbuf[2].name,cur_inode->inum);
         }
         if(!strcmp((char *)dbuf[k].name,head_dir)){
+            do_print("dep:%d ?:%d \n",dep,tail_dir[0]=='\0');
             cur_inode = &inode[dbuf[k].inode_id];
-            if(tail_dir[0]=='\0')
+            if(tail_dir[0]=='\0'){
+                find=1;
 		        return 1;
-            do_cd(tail_dir);
+            }
+            dep++;
+            find_path(tail_dir);
         }
-        // if(!strcmp(".",head_dir)){
-        //     if(tail_dir[0]=='\0')
-		//         return 1;
-        //     do_cd(tail_dir);
-        // }
-        // else if(!strcmp("..",head_dir)){
-        //     cur_inode = &inode[dbuf[1].inode_id];
-        //     if(tail_dir[0]=='\0')
-		//         return 1;
-        //     do_cd(tail_dir);
-        // }
-        // else if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,head_dir)){
-        //     cur_inode = &inode[dbuf[k].inode_id];
-        //     if(tail_dir[0]=='\0')
-		//         return 1;
-        //     do_cd(tail_dir);
-        // }
     }
-    do_print("[ERROR] PATH NOT FOUND!\n");
-    cur_inode = &inode[inode_id_temp];
-    //screen_reflush();
-    return 0;
+    if(find==0){
+        do_print("[ERROR] PATH NOT FOUND!\n");
+        cur_inode = &inode[inode_id_temp];
+        return 0;
+    }
+    else
+        return 1;
+
+}
+
+int do_cd(char *dir){
+    int inode_id_temp=cur_inode->inum;
+    if(superblock->magic_num != MAGICNUM){
+        do_print("[ERROR] No File System!\n");
+        return -1;
+    }
+    if(dir[0]!='\0'){
+        //find_path(dir);
+        if(find_path(dir)==0 || cur_inode->i_mode != IMODE_DENTRY){
+        do_print("[ERROR] PATH NOT FOUND!\n");
+        cur_inode = &inode[inode_id_temp];
+        return 0;
+        }
+    }
+    return 1;
+    // int inode_id_temp=cur_inode->inum;
+    // int find=0;
+    // if(superblock->magic_num != MAGICNUM){
+    //     do_print("[ERROR] No File System!\n");
+    //     return -1;
+    // }
+    
+    // if(dir[0]=='/'){
+    //     cur_inode=&inode[0];
+    //     int m;
+    //     for(m=0;m<strlen(dir);m++)
+    //         dir[m]=dir[m+1];
+    // }
+
+    // get_head_dir(head_dir,dir);
+    // //do_print("head:%s\n",head_dir);
+	// get_tail_dir(tail_dir,dir);
+    // //do_print("tail:%s\n",tail_dir);
+
+    // if(head_dir[0]=='\0')
+	// 	return 0;
+
+    // int i,j,k;
+    // for(i=0;i<cur_inode->num;i++){
+    //     j = i / INODE_PERBLK;
+    //     k = i % INODE_PERBLK;
+    //     if(k==0){
+    //         sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
+    //     }
+    //     if(!strcmp((char *)dbuf[k].name,head_dir) && cur_inode->i_mode==1 && inode[dbuf[k].inode_id].i_mode==1 ){
+    //         cur_inode = &inode[dbuf[k].inode_id];
+    //         if(tail_dir[0]=='\0'){
+    //             find=1;
+	// 	        return 1;
+    //         }
+    //         do_cd(tail_dir);
+    //     }
+    // }
+    // if(find==0){
+    //     do_print("[ERROR] PATH NOT FOUND!\n");
+    //     cur_inode = &inode[inode_id_temp];
+    //     //screen_reflush();
+    //     return 0;
+    // }
+    // else
+    //     return 1;
+
 }
 
 int do_ls(char *dir){
     int inode_id_temp=cur_inode->inum;
+    if(superblock->magic_num != MAGICNUM){
+        do_print("[ERROR] No File System!\n");
+        return -1;
+    }
     if(dir[0]!='\0'){
-        do_cd(dir);
+        if(find_path(dir)==0 || cur_inode->i_mode != IMODE_DENTRY){
+            do_print("[ERROR] PATH NOT FOUND!\n");
+            cur_inode = &inode[inode_id_temp];
+            return 0;
+        }
     }
     int i,j,k;
 
@@ -410,7 +472,6 @@ int do_ls(char *dir){
         if(dbuf[i].name[0]!='\0')
             do_print("%s\n",dbuf[i].name);
     }
-  
     //screen_reflush();
     cur_inode = &inode[inode_id_temp];
     return 1;
@@ -463,8 +524,11 @@ int do_touch(char *sname){
 
 int do_cat(char *sname){
     inode_t * inode_cur_tmp = cur_inode;
-    if(!do_cd(sname))
+    if(find_path(sname)==0 || cur_inode->i_mode != IMODE_FILE){
+        do_print("[ERROR] PATH NOT FOUND!\n");
+        cur_inode = inode_cur_tmp;
         return 0;
+    }
     int i,j,k;
     for(i=0;i<cur_inode->num;i++){
         j = i / INODE_PERBLK;
