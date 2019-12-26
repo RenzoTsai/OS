@@ -31,7 +31,7 @@ void test_fs(void)
         {
             sys_move_cursor(j,print_location+i);
             printf("%c", buff[j]);
-            sys_sleep(1);
+            //sys_sleep(1);
         }
     }
 

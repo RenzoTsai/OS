@@ -8,6 +8,7 @@
 uint32_t inode_id_cur;
 uint32_t valid_datablk_cur=45;
 dentry_t dbuf[128];
+dentry_t zero_buf[128];
 static    char head_dir[30];
 static    char tail_dir[30];
 
@@ -72,6 +73,8 @@ uint32_t alloc_datablock(){
     uint32_t datablock_cur = find_free_block();
     write_block_map(datablock_cur);
     //do_print("find block cur addr:%x\n",DATABLK_SD_ADDR + (datablock_cur-45)*0x1000);
+    bzero((void *)zero_buf , BLK_SZ);
+    sdwrite(zero_buf,DATABLK_SD_ADDR + (datablock_cur-45)*0x1000,BLK_SZ);
     return DATABLK_SD_ADDR + (datablock_cur-45)*0x1000;
 }
 
