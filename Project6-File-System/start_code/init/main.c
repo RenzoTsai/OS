@@ -226,7 +226,8 @@ static void init_syscall(void)
 	syscall[SYSCALL_FOPEN              ] = (int (*)()) & do_fopen;
 	syscall[SYSCALL_FREAD              ] = (int (*)()) & do_fread;
 	syscall[SYSCALL_FWRITE             ] = (int (*)()) & do_fwrite;
-	syscall[SYSCALL_FCLOSE              ] = (int (*)()) & do_close;
+	syscall[SYSCALL_FCLOSE             ] = (int (*)()) & do_close;
+	syscall[SYSCALL_FSEEK			   ] = (int (*)()) & do_fseek;
 	// init system call table.
 }
 

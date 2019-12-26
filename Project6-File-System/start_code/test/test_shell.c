@@ -131,13 +131,11 @@ void process_cmd(uint32_t argc, char argv[6][15])
         {
             sys_sleep(1);
             sys_cd((char *)argv[1]);
-            printf("Successed! cur_inum = %d\n", cur_inode->inum);
         }
         else if(!strcmp(argv[0], "ls"))
         {
             sys_sleep(1);
             sys_ls((char *)argv[1]);
-            printf("Successed! cur_inum = %d\n", cur_inode->inum);
         }
         else if(!strcmp(argv[0], "cat"))
         {

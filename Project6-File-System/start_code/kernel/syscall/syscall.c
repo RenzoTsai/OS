@@ -253,3 +253,7 @@ void sys_close(int fd)
 {
     invoke_syscall(SYSCALL_FCLOSE, fd, IGNORE, IGNORE);
 }
+
+void sys_fseek(int fd, int offset, int pos){
+    invoke_syscall(SYSCALL_FSEEK, fd, offset, pos);
+}

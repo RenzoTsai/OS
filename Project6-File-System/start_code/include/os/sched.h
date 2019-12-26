@@ -40,6 +40,7 @@
 #define STACK_MAX  0xa1000000
 #define STACK_MIN  0xa0f50000
 #define NUM_LOCK 16
+#define MAX_FD_NUM     30
 
 /* used to save register infomation */
 typedef struct regs_context
@@ -75,13 +76,10 @@ typedef enum {
     USER_THREAD,
 } task_type_t;
 
-#define MAX_FD_NUM     10
 typedef struct filedesc{
     uint32_t inum;
     uint32_t access;
-    uint32_t start_cur_pos;
-    uint32_t r_cur_pos;
-    uint32_t w_cur_pos;
+    uint32_t cur_pos;
 } filedesc_t;
 
 /* Process Control Block */

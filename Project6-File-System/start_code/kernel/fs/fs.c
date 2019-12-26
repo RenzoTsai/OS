@@ -46,11 +46,12 @@ uint32_t find_free_inode(){
     int i,j;
     uint32_t free_inode;
     for(i = 0; i < superblock->inodemap_num*0x200/8; i++)
-        for(j = 0; j < 8; j++)
+        for(j = 0; j < 8; j++){
             if(!(inodemap[i] &  (0x80 >>j))){
                 free_inode= 8*i+j;
                 return free_inode;
             }
+        }
     return -1;
 }
 
@@ -93,8 +94,8 @@ void free_inode(uint32_t inode_id){     //free inode map
     for(i=0;i<MAX_DIR_BLK;i++)
         if(inode[inode_id].direct[i])
             free_datablock(inode[inode_id].direct[i]);
-    
-    inodemap[inode_id/8]=inodemap[inode_id/8] & (~ ((uint8_t)(1<<(7-(inode_id % 8)))));
+
+    inodemap[inode_id/8]=(inodemap[inode_id/8] & (~ ((1<<(7-(inode_id % 8))))));
     sdwrite((char *)inodemap, (uint32_t)INODEMAP_SD_ADDR, 0x200);
 }
 
@@ -194,7 +195,7 @@ int do_mkfs(){
     sdread((char *)(INODE_ADDR), (uint32_t)INODE_SD_ADDR, 0x2000);
     inode_id_cur=0;
     inode[0].inum = inode_id_cur++;
-    inode[0].i_mode = 1;
+    inode[0].i_mode = IMODE_DENTRY;
     inode[0].mode = O_RDWR;
     inode[0].ref =0;
     inode[0].used_sz =8;
@@ -213,7 +214,6 @@ int do_mkfs(){
 
     cur_inode = inode;
     return 1;
-
 }
 
 void do_statfs(){
@@ -244,21 +244,21 @@ int do_mkdir(char *sname){
         do_print("[ERROR] No File System!\n");
         return -1;
     }
-    int i,j,k;
-    for(i=0;i<cur_inode->num;i++){
+    int i,j,k,cnt;
+    for(i=0,cnt=0;cnt<cur_inode->num;i++){
         j = i / INODE_PERBLK;
         k = i % INODE_PERBLK;
-        if(k==0){
+        if(k==0)
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
-        }
-        if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,sname)){
+        if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,sname))
             return 0;
-        }
+        if(dbuf[k].name[0]!='\0')
+            cnt++;
     }
     j = i / INODE_PERBLK;
     k = i % INODE_PERBLK;
     if(k==0){
-            sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
+        sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
     }
     strcpy((char *)dbuf[k].name,sname);
     dbuf[k].type=2;
@@ -269,7 +269,7 @@ int do_mkdir(char *sname){
     cur_inode->used_sz += 4;
     write_block_inode(cur_inode->inum);
     inode[i].inum=i;
-    inode[i].i_mode=1;
+    inode[i].i_mode=IMODE_DENTRY;
     inode[i].mode=O_RDWR;
     inode[i].used_sz = 8;
     inode[i].ctime=get_timer();
@@ -280,7 +280,7 @@ int do_mkdir(char *sname){
     inode[i].direct[0]=alloc_datablock();
     write_block_inode(i);
     init_entry(inode[i].direct[j],inode[i].inum,cur_inode->inum);
-    do_print("Successed! inum:%d addr:%x\n", inode[i].inum,inode[i].direct[j]);
+    do_print("Successed! inum:%d sd_addr:%x\n", inode[i].inum,inode[i].direct[j]);
     return 1;    
 }
 
@@ -289,8 +289,9 @@ int do_rmdir(char *sname){
         do_print("[ERROR] No File System!\n");
         return -1;
     }
-    int i,j,k;
-    for(i=0;i<cur_inode->num;i++){
+    int i,j,k,cnt;
+    int inode_num=cur_inode->num;
+    for(i=0,cnt=0;cnt<inode_num;i++){
         j = i / INODE_PERBLK;
         k = i % INODE_PERBLK;
         if(k==0){
@@ -299,6 +300,7 @@ int do_rmdir(char *sname){
         if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,sname)){
             dbuf[k].name[0] = '\0';
             dbuf[k].type = 0;
+            free_inode(dbuf[k].inode_id);
             dbuf[k].inode_id = -1;
             sdwrite((char *)dbuf, cur_inode->direct[j], BLK_SZ);      
             cur_inode->ref--;
@@ -306,9 +308,10 @@ int do_rmdir(char *sname){
             cur_inode->used_sz -= 4;
             cur_inode->num--;
             write_block_inode(cur_inode->inum);
-            free_inode(dbuf[k].inode_id);
             return 1;
         }
+        else if(dbuf[i].name[0]!='\0')
+            cnt++;
     }
     return 0;
 }
@@ -349,20 +352,21 @@ int find_path(char * dir){
     }
     get_head_dir(head_dir,dir);
 	get_tail_dir(tail_dir,dir);
-    do_print("dep:%d head: %s, ?:%d, tail:%s  \n",dep,head_dir,tail_dir[0]=='\0',tail_dir);
+    // do_print("dep:%d head: %s, ?:%d, tail:%s  \n",dep,head_dir,tail_dir[0]=='\0',tail_dir);
     if(head_dir[0]=='\0')
 		return 0;
 
-    int i,j,k;
-    for(i=0;i<cur_inode->num;i++){
+    int i,j,k,cnt;
+    int inode_num =cur_inode->num;
+    for(i=0,cnt=0;cnt<inode_num;i++){
         j = i / INODE_PERBLK;
         k = i % INODE_PERBLK;
         if(k==0){
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
-            do_print("dbuf:%s cur_inum:%d\n",dbuf[2].name,cur_inode->inum);
+            // do_print("dbuf:%s cur_inum:%d\n",dbuf[2].name,cur_inode->inum);
         }
         if(!strcmp((char *)dbuf[k].name,head_dir)){
-            do_print("dep:%d ?:%d \n",dep,tail_dir[0]=='\0');
+            // do_print("dep:%d ?:%d \n",dep,tail_dir[0]=='\0');
             cur_inode = &inode[dbuf[k].inode_id];
             if(tail_dir[0]=='\0'){
                 find=1;
@@ -371,6 +375,8 @@ int find_path(char * dir){
             dep++;
             find_path(tail_dir);
         }
+        if(dbuf[i].name[0]!='\0')
+            cnt++;
     }
     if(find==0){
         do_print("[ERROR] PATH NOT FOUND!\n");
@@ -397,53 +403,6 @@ int do_cd(char *dir){
         }
     }
     return 1;
-    // int inode_id_temp=cur_inode->inum;
-    // int find=0;
-    // if(superblock->magic_num != MAGICNUM){
-    //     do_print("[ERROR] No File System!\n");
-    //     return -1;
-    // }
-    
-    // if(dir[0]=='/'){
-    //     cur_inode=&inode[0];
-    //     int m;
-    //     for(m=0;m<strlen(dir);m++)
-    //         dir[m]=dir[m+1];
-    // }
-
-    // get_head_dir(head_dir,dir);
-    // //do_print("head:%s\n",head_dir);
-	// get_tail_dir(tail_dir,dir);
-    // //do_print("tail:%s\n",tail_dir);
-
-    // if(head_dir[0]=='\0')
-	// 	return 0;
-
-    // int i,j,k;
-    // for(i=0;i<cur_inode->num;i++){
-    //     j = i / INODE_PERBLK;
-    //     k = i % INODE_PERBLK;
-    //     if(k==0){
-    //         sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
-    //     }
-    //     if(!strcmp((char *)dbuf[k].name,head_dir) && cur_inode->i_mode==1 && inode[dbuf[k].inode_id].i_mode==1 ){
-    //         cur_inode = &inode[dbuf[k].inode_id];
-    //         if(tail_dir[0]=='\0'){
-    //             find=1;
-	// 	        return 1;
-    //         }
-    //         do_cd(tail_dir);
-    //     }
-    // }
-    // if(find==0){
-    //     do_print("[ERROR] PATH NOT FOUND!\n");
-    //     cur_inode = &inode[inode_id_temp];
-    //     //screen_reflush();
-    //     return 0;
-    // }
-    // else
-    //     return 1;
-
 }
 
 int do_ls(char *dir){
@@ -459,8 +418,8 @@ int do_ls(char *dir){
             return 0;
         }
     }
-    int i,j,k;
 
+    int i,j,k;
     for(i=0;i<cur_inode->num;i++){
         j = i / INODE_PERBLK;
         k = i % INODE_PERBLK;
@@ -468,11 +427,14 @@ int do_ls(char *dir){
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
         }
     }
-    for(i=0;i<cur_inode->num;i++){
-        if(dbuf[i].name[0]!='\0')
+    int inode_num =cur_inode->num;
+    int cnt;
+    for(i=0,cnt=0;cnt<inode_num;i++){
+        if(dbuf[i].name[0]!='\0'){
             do_print("%s\n",dbuf[i].name);
+            cnt++;
+        }  
     }
-    //screen_reflush();
     cur_inode = &inode[inode_id_temp];
     return 1;
 }
@@ -507,12 +469,12 @@ int do_touch(char *sname){
     cur_inode->used_sz += 4;
     write_block_inode(cur_inode->inum);
     inode[i].inum=i;
-    inode[i].i_mode=0;
+    inode[i].i_mode=IMODE_FILE;
     inode[i].mode=O_RDWR;
-    inode[i].used_sz = 8;
+    inode[i].used_sz = 0;
     inode[i].ctime=get_timer();
     inode[i].mtime=get_timer();
-    inode[i].num=2;
+    inode[i].num=1;
     for(j = 0; j < MAX_DIR_BLK; j++)
         inode[i].direct[j] = 0;
     inode[i].direct[0]=alloc_datablock();
@@ -555,25 +517,17 @@ int alloc_fd(){
 }
 int do_fopen(char *sname, int access){
     inode_t * inode_cur_tmp = cur_inode;
-    if(!do_cd(sname))
+    if(find_path(sname)==0 || cur_inode->i_mode != IMODE_FILE){
+        do_print("[ERROR] PATH NOT FOUND!\n");
+        cur_inode = inode_cur_tmp;
         return -1;
-        int i,j,k;
-    for(i=0;i<cur_inode->num;i++){
-        j = i / INODE_PERBLK;
-        k = i % INODE_PERBLK;
-        if(k==0){
-            bzero((char *)dbuf,BLK_SZ);
-            sdread((char *)dbuf, cur_inode -> direct[j], BLK_SZ);
-        }
     }
-    if(cur_inode->i_mode == 0 && cur_inode -> mode != access)
+    if(cur_inode->i_mode != IMODE_FILE  && cur_inode -> mode != access)
         return -1;
     int fd_id= alloc_fd();
     current_running->opfile[fd_id].inum = cur_inode ->inum;
     current_running->opfile[fd_id].access = access;
-    current_running->opfile[fd_id].r_cur_pos = 0;
-    current_running->opfile[fd_id].w_cur_pos = 0;
-    current_running->opfile[fd_id].start_cur_pos = 0;
+    current_running->opfile[fd_id].cur_pos = 0;
     cur_inode = inode_cur_tmp;
     return fd_id;
 }
@@ -583,10 +537,32 @@ int do_fread(int fd, char *buff, int size){
     if(current_running->opfile[fd].access != O_RD && current_running->opfile[fd].access != O_RDWR)
         return -1;
     
-    
-    
-    
+    uint32_t cur_pos =  current_running->opfile[fd].cur_pos;
+    uint32_t start_pos =  current_running->opfile[fd].cur_pos;
+    uint32_t start_block = cur_pos/BLK_SZ;
+    uint32_t end_block = (cur_pos+size)/BLK_SZ;
 
+    int i;
+    for(i=0;i<(end_block-start_block+1);i++){
+        if( (start_block+i) >= inode_cur_tmp->num ){
+            return -1;
+            do_print("[ERROR]:READ SIZE IS TOO LARGE\n");
+        }
+        if( (cur_pos%BLK_SZ + size - (cur_pos-start_pos)) <= BLK_SZ){
+            sdread((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
+            memcpy( buff + (cur_pos-start_pos), dbuf + cur_pos%BLK_SZ, size);
+            cur_pos += size;
+        }
+        else{
+            sdread((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
+            memcpy(dbuf + cur_pos%BLK_SZ, buff + (cur_pos-start_pos), BLK_SZ - cur_pos%BLK_SZ);
+            do_print("%c %c \n",dbuf[0],dbuf[1]);
+            cur_pos += (BLK_SZ - cur_pos%BLK_SZ);
+        }
+    }
+
+    current_running->opfile[fd].cur_pos=cur_pos;
+    return size;
 }
 
 int do_fwrite(int fd, char *buff, int size){
@@ -594,11 +570,44 @@ int do_fwrite(int fd, char *buff, int size){
     if(current_running->opfile[fd].access != O_WR && current_running->opfile[fd].access != O_RDWR)
         return -1;
 
+    uint32_t cur_pos =  current_running->opfile[fd].cur_pos;
+    uint32_t start_pos =  current_running->opfile[fd].cur_pos;
+    uint32_t start_block = cur_pos/BLK_SZ;
+    uint32_t end_block = (cur_pos+size)/BLK_SZ;
+    //do_print("cur_pos:%d, start_block:%d, end_block:%d ,inum:%d\n",cur_pos,start_block,end_block,inode_cur_tmp->inum);
+    int i;
+    for(i=0;i<(end_block-start_block+1);i++){
+        if( (start_block+i) >= inode_cur_tmp->num ){
+                inode_cur_tmp -> direct[start_block+i]=alloc_datablock();
+                (inode_cur_tmp->num)++;
+        }
+        if( (cur_pos%BLK_SZ + size - (cur_pos-start_pos)) <= BLK_SZ){
+            sdread((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
+            memcpy(dbuf + cur_pos%BLK_SZ, buff + (cur_pos-start_pos), size);
+            cur_pos += size;
+            sdwrite((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);    
+        }
+        else{
+            sdread((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
+            memcpy(dbuf + cur_pos%BLK_SZ, buff + (cur_pos-start_pos), BLK_SZ - cur_pos%BLK_SZ);
+            cur_pos += (BLK_SZ - cur_pos%BLK_SZ);
+            sdwrite((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);  
+        }
+    }
+    inode_cur_tmp->used_sz+=size;
+    inode_cur_tmp->mtime=get_timer();
+    write_block_inode(inode_cur_tmp->inum);
+    current_running->opfile[fd].cur_pos=cur_pos;
+    return size;
 }
 
 void do_close(int fd){
-    int k = current_running->opfile[fd].inum;
-    inode[k].mtime = get_timer();
-    write_block_inode(inode[k].inum);
+    int inum = current_running->opfile[fd].inum;
+    inode[inum].mtime = get_timer();
+    write_block_inode(inum);
     bzero((char *)&current_running->opfile[fd], sizeof(current_running->opfile[fd]));
+}
+
+void do_fseek(int fd, int offset, int pos){
+    current_running->opfile[fd].cur_pos = pos+offset;
 }

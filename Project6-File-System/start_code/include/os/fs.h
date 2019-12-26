@@ -21,7 +21,6 @@ typedef enum {
 #define INODE_ADDR      0xa0f04600
 #define DATABLK_ADDR    0xa0f44600
 
-#define VTP(X)  ((uint32_t)(X) & 0x1fffffff)
 
 #define VBLK_SD_ADDR       0xffff000
 #define SUPERBLK_SD_ADDR   0x20000000   //offset =512MB
@@ -85,27 +84,17 @@ typedef struct inode{
 //1 datablock : 4KB / 32B = 128
 #define DENTRY_SIZE      64
 typedef struct dentry {
-    uint32_t  type; // 1: file, 2: dentry, 3:".", 4:".."
+    uint32_t  type;     // 1: file, 2: dentry, 3:".", 4:".."
     char name[MAX_NAME_LEN];
     uint32_t inode_id;
 } dentry_t;
 
-// #define MAX_FD_NUM     64
-// typedef struct filedesc{
-//     uint32_t inum;
-//     uint32_t access;
-//     uint32_t start_cur_pos;
-//     uint32_t r_cur_pos;
-//     uint32_t w_cur_pos;
-// } filedesc_t;
 
 superblock_t *superblock;
 uint8_t *blkmap;
 uint8_t *inodemap;
-uint32_t *inode_buf;
 inode_t *inode;
 inode_t *cur_inode;
-dentry_t *cur_dentry;
 
 
 int init_fs();
@@ -121,6 +110,6 @@ int do_fopen(char *sname, int access);
 int do_fread(int fd, char *buff, int size);
 int do_fwrite(int fd, char *buff, int size);
 void do_close(int fd);
-void do_cfs();
+void do_fseek(int fd, int offset, int pos);
 void write_inode_map(int inode_id);
 #endif
