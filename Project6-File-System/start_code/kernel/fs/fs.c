@@ -319,6 +319,7 @@ int do_rmdir(char *sname){
     }
     return 0;
 }
+
 char * get_head_dir(char *head,char *dir){
     int i=0,j;
     for(j=0;i<strlen(dir)&&dir[i]!='/';i++,j++){
@@ -613,4 +614,56 @@ void do_close(int fd){
 
 void do_fseek(int fd, int offset, int pos){
     current_running->opfile[fd].cur_pos = pos+offset;
+}
+
+/* Bonus */
+int do_rename(char *sname, char *new_name){
+    if(superblock->magic_num != MAGICNUM){
+        do_print("[ERROR] No File System!\n");
+        return -1;
+    }
+    int i,j,k,cnt;
+    int inode_num=cur_inode->num;
+    for(i=0,cnt=0;cnt<inode_num;i++){
+        j = i / INODE_PERBLK;
+        k = i % INODE_PERBLK;
+        if(k==0){
+            sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
+        }
+        if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,sname)){
+            bzero(dbuf[k].name,sizeof(dbuf[k].name));
+            strcpy((char *)dbuf[k].name,new_name);
+            sdwrite((char *)dbuf, cur_inode->direct[j], BLK_SZ);      
+            cur_inode->mtime = get_timer();
+            write_block_inode(cur_inode->inum);
+            return 1;
+        }
+        else if(dbuf[i].name[0]!='\0')          //skip deleted('\0') dentry
+            cnt++;
+    }
+    return 0;
+}
+
+
+int do_find(char * path,char * name){
+    int inode_id_temp=cur_inode->inum;
+    if(superblock->magic_num != MAGICNUM){
+        do_print("[ERROR] No File System!\n");
+        return -1;
+    }
+    if(path[0]!='\0'){
+        if(find_path(path)==0 || cur_inode->i_mode != IMODE_DENTRY){
+            do_print("[ERROR] PATH NOT FOUND!\n");
+            cur_inode = &inode[inode_id_temp];
+            return 0;
+        }
+        if(find_path(name)==0 || cur_inode->i_mode != IMODE_FILE){
+            do_print("[ERROR] FILE NOT FOUND!\n");
+            cur_inode = &inode[inode_id_temp];
+            return 0;
+        }
+    }
+    cur_inode = &inode[inode_id_temp];
+    do_print("[SYS] FIND THE FILE!\n");
+    return 1;
 }

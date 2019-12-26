@@ -150,6 +150,16 @@ void process_cmd(uint32_t argc, char argv[6][15])
         else
             printf("Unknown command!\n");
     }
+    else if(argc == 3){
+        if(!strcmp(argv[0], "rename"))
+        {
+            sys_rename((char *)argv[1],(char *)argv[2]);
+        }
+        else if(!strcmp(argv[0], "find"))
+        {
+            sys_find((char *)argv[1],(char *)argv[2]);
+        }
+    }
     else if(argc != 0)
         printf("Unknown command! [argc =%d]\n",argc);
 }

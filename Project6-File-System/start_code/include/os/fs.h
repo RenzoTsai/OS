@@ -112,4 +112,6 @@ int do_fwrite(int fd, char *buff, int size);
 void do_close(int fd);
 void do_fseek(int fd, int offset, int pos);
 void write_inode_map(int inode_id);
+int do_rename(char *sname, char *new_name);
+int do_find(char * path,char * name);
 #endif

@@ -87,6 +87,8 @@
 #define SYSCALL_FWRITE 47
 #define SYSCALL_FCLOSE 48 
 #define SYSCALL_FSEEK  49 
+#define SYSCALL_RENAME 50
+#define SYSCALL_FIND 51
 /* syscall function pointer */
 int (*syscall[NUM_SYSCALLS])();
 
@@ -121,21 +123,15 @@ void mutex_lock_acquire(mutex_lock_t *);
 void mutex_lock_release(mutex_lock_t *);
 
 void barrier_init(barrier_t *barrier, int goal);
-
 void barrier_wait(barrier_t *barrier);
 
 void semaphore_init(semaphore_t *s, int val);
-
 void semaphore_up(semaphore_t *s);
-
 void semaphore_down(semaphore_t *s);
 
 void condition_init(condition_t *condition);
-
 void condition_wait(mutex_lock_t *lock, condition_t *condition);
-
 void condition_signal(condition_t *condition);
-
 void condition_broadcast(condition_t *condition);
 
 void sys_wait_recv_package();
@@ -154,4 +150,7 @@ int sys_fread(int fd, char *buff, int size);
 int sys_fwrite(int fd, char *buff, int size);
 void sys_close(int fd);
 void sys_fseek(int fd, int offset, int pos);
+int sys_rename(char *sname, char *new_name);
+int sys_find(char * path,char * name);
+
 #endif

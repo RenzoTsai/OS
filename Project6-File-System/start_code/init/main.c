@@ -228,6 +228,8 @@ static void init_syscall(void)
 	syscall[SYSCALL_FWRITE             ] = (int (*)()) & do_fwrite;
 	syscall[SYSCALL_FCLOSE             ] = (int (*)()) & do_close;
 	syscall[SYSCALL_FSEEK			   ] = (int (*)()) & do_fseek;
+	syscall[SYSCALL_RENAME			   ] = (int (*)()) & do_rename;
+	syscall[SYSCALL_FIND			   ] = (int (*)()) & do_find;
 	// init system call table.
 }
 

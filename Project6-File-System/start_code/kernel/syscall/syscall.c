@@ -257,3 +257,11 @@ void sys_close(int fd)
 void sys_fseek(int fd, int offset, int pos){
     invoke_syscall(SYSCALL_FSEEK, fd, offset, pos);
 }
+
+int sys_rename(char *sname, char *new_name){
+    invoke_syscall(SYSCALL_RENAME, (int)sname, (int)new_name, IGNORE);
+}
+
+int sys_find(char * path,char * name){
+    invoke_syscall(SYSCALL_FIND, (int)path, (int)name, IGNORE);
+}
