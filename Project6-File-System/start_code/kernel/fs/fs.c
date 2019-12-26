@@ -5,8 +5,6 @@
 #include "time.h"
 #include "string.h"
 
-uint32_t inode_id_cur;
-uint32_t valid_datablk_cur=45;
 dentry_t dbuf[128];
 dentry_t zero_buf[128];
 static    char head_dir[30];
@@ -14,8 +12,8 @@ static    char tail_dir[30];
 
 void write_inode_map(inode_id)
 {
-    /* inodemap = (uint8_t *)INODEMAP_ADDR;
-    sdread((char *)inodemap, (uint32_t)INODEMAP_SD_ADDR, 0x200); */
+    //inodemap = (uint8_t *)INODEMAP_ADDR;
+    //sdread((char *)inodemap, (uint32_t)INODEMAP_SD_ADDR, 0x200);
     inodemap[inode_id/8]=inodemap[inode_id/8] | (1<<(7-(inode_id % 8)));
     sdwrite((char *)inodemap, (uint32_t)INODEMAP_SD_ADDR, 0x200);
 }
@@ -27,16 +25,16 @@ void write_block_inode(inode_id)
 
 void write_block_map(block_id)
 {
-    /* blkmap = (uint8_t *)BLKMAP_ADDR;
-    sdread((char *)blkmap, (uint32_t)BLKMAP_SD_ADDR, 0x4000); */
+    //blkmap = (uint8_t *)BLKMAP_ADDR;
+    //sdread((char *)blkmap, (uint32_t)BLKMAP_SD_ADDR, 0x4000); 
     blkmap[block_id/8]=blkmap[block_id/8] | (1<<(7-(block_id % 8)));
     sdwrite((char *)blkmap, (uint32_t)BLKMAP_SD_ADDR, 0x4000);
 }
 
 void init_block_map(block_id)
 {
-    /* blkmap = (uint8_t *)BLKMAP_ADDR;
-    sdread((char *)blkmap, (uint32_t)BLKMAP_SD_ADDR, 0x4000); */
+    //blkmap = (uint8_t *)BLKMAP_ADDR;
+    //sdread((char *)blkmap, (uint32_t)BLKMAP_SD_ADDR, 0x4000); 
     int i;
     for(i=0;i<block_id;i++)
         blkmap[i/8]=blkmap[i/8] | (1<<(7-(i % 8)));
@@ -69,11 +67,9 @@ uint32_t find_free_block(){
 }
 
 uint32_t alloc_datablock(){
-    //uint32_t datablock_cur= valid_datablk_cur++;
     uint32_t datablock_cur = find_free_block();
     write_block_map(datablock_cur);
     //do_print("find block cur addr:%x\n",DATABLK_SD_ADDR + (datablock_cur-45)*0x1000);
-    bzero((void *)zero_buf , BLK_SZ);
     sdwrite(zero_buf,DATABLK_SD_ADDR + (datablock_cur-45)*0x1000,BLK_SZ);
     return DATABLK_SD_ADDR + (datablock_cur-45)*0x1000;
 }
@@ -84,15 +80,15 @@ uint32_t alloc_inode(){
     return inode_cur;
 }
 
-void free_datablock(uint32_t block_addr){   //free data block map
+void free_datablock(uint32_t block_addr){           //free data block map
     uint32_t datablock_cur = (block_addr-DATABLK_ADDR)/0x1000 +45;
-/*     blkmap = (uint8_t *)BLKMAP_ADDR;
-    sdread((char *)blkmap, (uint32_t)BLKMAP_SD_ADDR, 0x4000); */
+    //blkmap = (uint8_t *)BLKMAP_ADDR;
+    //sdread((char *)blkmap, (uint32_t)BLKMAP_SD_ADDR, 0x4000); 
     blkmap[datablock_cur/8]=blkmap[datablock_cur/8] & (~ ((uint8_t)(1<<(7-(datablock_cur % 8)))));
     sdwrite((char *)blkmap, (uint32_t)BLKMAP_SD_ADDR, 0x4000);
 }
 
-void free_inode(uint32_t inode_id){     //free inode map
+void free_inode(uint32_t inode_id){                 //free inode map
     int i;
     for(i=0;i<MAX_DIR_BLK;i++)
         if(inode[inode_id].direct[i])
@@ -105,7 +101,6 @@ void free_inode(uint32_t inode_id){     //free inode map
 
 void init_entry(uint32_t ptr, uint32_t cur_inode_id, uint32_t parent_inode_id)
 {
-
     bzero(dbuf, sizeof(dbuf));
     strcpy((char *)dbuf[0].name, (char *)".");
     dbuf[0].type = 3;
@@ -122,19 +117,24 @@ int init_fs(){
 	sdread((char *)superblock,SUPERBLK_SD_ADDR,0x200);
 	if(superblock->magic_num != MAGICNUM)
 		return 0;
-	//read block map
+
+	/* read block map */
     blkmap = (uint8_t *)BLKMAP_ADDR;
     sdread((char *)(BLKMAP_ADDR), (uint32_t)BLKMAP_SD_ADDR, 0x4000);
-    //read inode map
+
+    /* read inode map */
     inodemap = (uint8_t *)INODEMAP_ADDR;
     sdread((char *)(INODEMAP_ADDR), (uint32_t)INODEMAP_SD_ADDR, 0x200);
-    //read inodes
+
+    /* read inodes */
     //inode_buf = (uint32_t *)INODE_ADDR;
     inode = (inode_t *)INODE_ADDR;
     sdread((char *)(INODE_ADDR), (uint32_t)INODE_SD_ADDR, 0x2000);
-    //current dir
+
+    /* current inode -> root inode */
     cur_inode = inode;
     bzero((char *)current_running->opfile, sizeof(current_running->opfile));
+    bzero((void *)zero_buf , BLK_SZ);
     return 1;
 }
 
@@ -196,8 +196,9 @@ int do_mkfs(){
     bzero((void *)inode, superblock->inodes_num*0x200);
     //sdwrite((char *)inode,INODE_SD_ADDR, superblock->inodes_num*0x200);
     sdread((char *)(INODE_ADDR), (uint32_t)INODE_SD_ADDR, 0x2000);
-    inode_id_cur=0;
-    inode[0].inum = inode_id_cur++;
+
+    /* init root inode */
+    inode[0].inum = 0;
     inode[0].i_mode = IMODE_DENTRY;
     inode[0].mode = O_RDWR;
     inode[0].ref =0;
@@ -255,7 +256,7 @@ int do_mkdir(char *sname){
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
         if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,sname))
             return 0;
-        if(dbuf[k].name[0]!='\0')
+        if(dbuf[k].name[0]!='\0') 
             cnt++;
     }
     j = i / INODE_PERBLK;
@@ -313,7 +314,7 @@ int do_rmdir(char *sname){
             write_block_inode(cur_inode->inum);
             return 1;
         }
-        else if(dbuf[i].name[0]!='\0')
+        else if(dbuf[i].name[0]!='\0')          //skip deleted('\0') dentry
             cnt++;
     }
     return 0;
@@ -337,6 +338,7 @@ char * get_tail_dir(char *tail,char *dir){
     tail[j]='\0';
     return tail;
 }
+
 int find=0;
 int find_path(char * dir){
     static int dep=0;
@@ -344,7 +346,8 @@ int find_path(char * dir){
 
     if(dep==0)
         find=0;
-    
+
+    /*handle an absolute path */
     if(dir[0]=='/'){
         cur_inode=&inode[0];
         if(strlen(dir)==1)
@@ -353,9 +356,10 @@ int find_path(char * dir){
         for(m=0;m<strlen(dir);m++)
             dir[m]=dir[m+1];
     }
+
     get_head_dir(head_dir,dir);
 	get_tail_dir(tail_dir,dir);
-    // do_print("dep:%d head: %s, ?:%d, tail:%s  \n",dep,head_dir,tail_dir[0]=='\0',tail_dir);
+
     if(head_dir[0]=='\0')
 		return 0;
 
@@ -366,10 +370,8 @@ int find_path(char * dir){
         k = i % INODE_PERBLK;
         if(k==0){
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
-            // do_print("dbuf:%s cur_inum:%d\n",dbuf[2].name,cur_inode->inum);
         }
         if(!strcmp((char *)dbuf[k].name,head_dir)){
-            // do_print("dep:%d ?:%d \n",dep,tail_dir[0]=='\0');
             cur_inode = &inode[dbuf[k].inode_id];
             if(tail_dir[0]=='\0'){
                 find=1;
@@ -378,17 +380,16 @@ int find_path(char * dir){
             dep++;
             find_path(tail_dir);
         }
-        if(dbuf[i].name[0]!='\0')
+        if(dbuf[i].name[0]!='\0')           //skip deleted('\0') dentry
             cnt++;
     }
     if(find==0){
-        do_print("[ERROR] PATH NOT FOUND!\n");
+        //do_print("[ERROR] PATH NOT FOUND!\n");
         cur_inode = &inode[inode_id_temp];
         return 0;
     }
     else
         return 1;
-
 }
 
 int do_cd(char *dir){
@@ -398,7 +399,6 @@ int do_cd(char *dir){
         return -1;
     }
     if(dir[0]!='\0'){
-        //find_path(dir);
         if(find_path(dir)==0 || cur_inode->i_mode != IMODE_DENTRY){
         do_print("[ERROR] PATH NOT FOUND!\n");
         cur_inode = &inode[inode_id_temp];

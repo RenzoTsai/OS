@@ -39,7 +39,8 @@ void scheduler(void)
     pcb_t *position;
     pcb_t *next_running;
     check_sleeping();
-    
+    current_running->cursor_x = screen_cursor_x;
+    current_running->cursor_y = screen_cursor_y;
     next_running =(queue_is_empty(&ready_queue))?current_running:(pcb_t *)queue_dequeue(&ready_queue);
     if(current_running->status != TASK_BLOCKED && current_running->status != TASK_EXITED  && next_running != current_running){
         current_running->status = TASK_READY;
@@ -52,7 +53,8 @@ void scheduler(void)
     current_running->priority = current_running->task_priority;
     current_running->status = TASK_RUNNING;
     current_running->which_queue=NULL;
-
+    screen_cursor_x = current_running->cursor_x;
+    screen_cursor_y = current_running->cursor_y;
 
     position = (pcb_t *)ready_queue.head;
     while(position != NULL){
