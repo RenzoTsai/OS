@@ -113,39 +113,37 @@ void process_cmd(uint32_t argc, char argv[6][15])
         }
         else if(!strcmp(argv[0], "mkdir"))
         {
-            sys_sleep(1);
             sys_mkdir((char *)argv[1]);
-            //printf("Successed! cur_inum = %d\n", cur_inode->inum);
         }
         else if(!strcmp(argv[0], "rmdir"))
         {
             sys_rmdir((char *)argv[1]);
-            //printf("Successed! cur_inum = %d\n", cur_inode->inum);
         }
         else if(!strcmp(argv[0], "touch"))
         {
             sys_touch((char *)argv[1]);
-            //printf("Successed! cur_inum = %d\n", cur_inode->inum);
         }
         else if(!strcmp(argv[0], "cd"))
         {
-            sys_sleep(1);
             sys_cd((char *)argv[1]);
         }
         else if(!strcmp(argv[0], "ls"))
         {
-            sys_sleep(1);
             sys_ls((char *)argv[1]);
         }
         else if(!strcmp(argv[0], "cat"))
         {
             sys_cat((char *)argv[1]);
-            //printf("Successed! cur_inum = %d\n", cur_inode->inum);
         }
         else if(!strcmp(argv[0], "kill"))
         {
             sys_kill(pid);
             //printf("kill process pid = %d\n", pid);
+        }
+        else if(!strcmp(argv[0], "find"))
+        {
+            argv[2][0] = '\0';
+            sys_find((char *)argv[2],(char *)argv[1]);
         }
         else
             printf("Unknown command!\n");

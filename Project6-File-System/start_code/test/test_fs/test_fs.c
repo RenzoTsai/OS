@@ -13,8 +13,16 @@ void test_fs(void)
     int i, j;
     sys_move_cursor(0,1);
     printf("> [TASK] Testing read and write file ... \n");
+
+    // char myp[6] ={'0','1','2','\0','1','\0'};
+    // for(i=0;i<6;i++)
+    //     printf("%c",myp[i]);
+    // printf("\0");
     
     int fd = sys_fopen("1.txt", O_RDWR);
+    if(fd==-1){
+        sys_exit();
+    }
     sys_fseek(fd,0,0);
 
     for (i = 0; i < 10; i++)

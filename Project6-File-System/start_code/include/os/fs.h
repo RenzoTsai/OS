@@ -36,8 +36,8 @@ typedef enum {
 //Magic number
 #define MAGICNUM    0x46534653          //"FS"
 
-#define IMODE_FILE      0
-#define IMODE_DENTRY    1
+#define IMODE_FILE      1
+#define IMODE_DENTRY    2
 
 
 //superblock

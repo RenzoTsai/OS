@@ -6,6 +6,7 @@
 #include "string.h"
 
 dentry_t dbuf[128];
+char file_buf[BLK_SZ/sizeof(char)];
 dentry_t zero_buf[128];
 static    char head_dir[30];
 static    char tail_dir[30];
@@ -284,7 +285,7 @@ int do_mkdir(char *sname){
     inode[i].direct[0]=alloc_datablock();
     write_block_inode(i);
     init_entry(inode[i].direct[j],inode[i].inum,cur_inode->inum);
-    do_print("Successed! inum:%d sd_addr:%x\n", inode[i].inum,inode[i].direct[j]);
+    do_print("[SYS] Successed! inum:%d sd_addr:%x\n", inode[i].inum,inode[i].direct[j]);
     return 1;    
 }
 
@@ -345,8 +346,10 @@ int find_path(char * dir){
     static int dep=0;
     int inode_id_temp=cur_inode->inum;
 
-    if(dep==0)
+    if(dep==0){
+        // do_print("be zero:\n");
         find=0;
+    }
 
     /*handle an absolute path */
     if(dir[0]=='/'){
@@ -387,10 +390,13 @@ int find_path(char * dir){
     if(find==0){
         //do_print("[ERROR] PATH NOT FOUND!\n");
         cur_inode = &inode[inode_id_temp];
+        dep=0;
         return 0;
     }
-    else
+    else{
+        dep=0;
         return 1;
+    }
 }
 
 int do_cd(char *dir){
@@ -495,18 +501,19 @@ int do_cat(char *sname){
         cur_inode = inode_cur_tmp;
         return 0;
     }
-    int i,j,k;
+    int i,j,k,m;
+    int cnt=0;
     for(i=0;i<cur_inode->num;i++){
         j = i / INODE_PERBLK;
         k = i % INODE_PERBLK;
-        if(k == 0){
-            bzero((char *)dbuf,BLK_SZ);
-            sdread((char *)dbuf, cur_inode -> direct[j], BLK_SZ);
+        bzero((char *)file_buf,BLK_SZ);
+        sdread((char *)file_buf, cur_inode -> direct[j], BLK_SZ);
+        for(m=0;cnt < cur_inode->used_sz && m < BLK_SZ ;cnt++,m++){
+            do_print("%c",file_buf[m]);
         }
     }
-    for(i = 0;i < cur_inode->used_sz;i++){
-        do_print("%c",dbuf[i]);
-    }
+    do_print("\n");
+    do_print("[SYS]TOTAL SIZE:%d\n",cur_inode->used_sz);
     cur_inode = inode_cur_tmp;
     return 1;
 }
@@ -550,17 +557,16 @@ int do_fread(int fd, char *buff, int size){
     for(i=0;i<(end_block-start_block+1);i++){
         if( (start_block+i) >= inode_cur_tmp->num ){
             return -1;
-            do_print("[ERROR]:READ SIZE IS TOO LARGE\n");
+            do_print("[ERROR] READ SIZE IS TOO LARGE\n");
         }
         if( (cur_pos%BLK_SZ + size - (cur_pos-start_pos)) <= BLK_SZ){
-            sdread((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
-            memcpy( buff + (cur_pos-start_pos), dbuf + cur_pos%BLK_SZ, size);
+            sdread((char *)file_buf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
+            memcpy( buff + (cur_pos-start_pos), file_buf + cur_pos%BLK_SZ, size);
             cur_pos += size;
         }
         else{
-            sdread((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
-            memcpy(dbuf + cur_pos%BLK_SZ, buff + (cur_pos-start_pos), BLK_SZ - cur_pos%BLK_SZ);
-            do_print("%c %c \n",dbuf[0],dbuf[1]);
+            sdread((char *)file_buf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
+            memcpy(file_buf + cur_pos%BLK_SZ, buff + (cur_pos-start_pos), BLK_SZ - cur_pos%BLK_SZ);
             cur_pos += (BLK_SZ - cur_pos%BLK_SZ);
         }
     }
@@ -579,23 +585,23 @@ int do_fwrite(int fd, char *buff, int size){
     uint32_t start_block = cur_pos/BLK_SZ;
     uint32_t end_block = (cur_pos+size)/BLK_SZ;
     //do_print("cur_pos:%d, start_block:%d, end_block:%d ,inum:%d\n",cur_pos,start_block,end_block,inode_cur_tmp->inum);
-    int i;
+    int i,m,cnt=0;
     for(i=0;i<(end_block-start_block+1);i++){
         if( (start_block+i) >= inode_cur_tmp->num ){
                 inode_cur_tmp -> direct[start_block+i]=alloc_datablock();
                 (inode_cur_tmp->num)++;
         }
         if( (cur_pos%BLK_SZ + size - (cur_pos-start_pos)) <= BLK_SZ){
-            sdread((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
-            memcpy(dbuf + cur_pos%BLK_SZ, buff + (cur_pos-start_pos), size);
+            sdread((char *)file_buf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
+            memcpy(file_buf + cur_pos%BLK_SZ, buff + (cur_pos-start_pos), size);
             cur_pos += size;
-            sdwrite((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);    
+            sdwrite((char *)file_buf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
         }
         else{
-            sdread((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
-            memcpy(dbuf + cur_pos%BLK_SZ, buff + (cur_pos-start_pos), BLK_SZ - cur_pos%BLK_SZ);
+            sdread((char *)file_buf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);
+            memcpy(file_buf + cur_pos%BLK_SZ, buff + (cur_pos-start_pos), BLK_SZ - cur_pos%BLK_SZ);
             cur_pos += (BLK_SZ - cur_pos%BLK_SZ);
-            sdwrite((char *)dbuf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);  
+            sdwrite((char *)file_buf, inode_cur_tmp -> direct[start_block+i], BLK_SZ);  
         }
     }
     inode_cur_tmp->used_sz+=size;
@@ -630,12 +636,14 @@ int do_rename(char *sname, char *new_name){
         if(k==0){
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
         }
-        if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,sname)){
+        if((dbuf[k].type==2||dbuf[k].type==1)&&!strcmp((char *)dbuf[k].name,sname)){
             bzero(dbuf[k].name,sizeof(dbuf[k].name));
             strcpy((char *)dbuf[k].name,new_name);
             sdwrite((char *)dbuf, cur_inode->direct[j], BLK_SZ);      
             cur_inode->mtime = get_timer();
             write_block_inode(cur_inode->inum);
+            do_print("[SYS] %s",sname);
+            do_print("-> %s\n",new_name);
             return 1;
         }
         else if(dbuf[i].name[0]!='\0')          //skip deleted('\0') dentry
@@ -643,7 +651,6 @@ int do_rename(char *sname, char *new_name){
     }
     return 0;
 }
-
 
 int do_find(char * path,char * name){
     int inode_id_temp=cur_inode->inum;
@@ -657,13 +664,31 @@ int do_find(char * path,char * name){
             cur_inode = &inode[inode_id_temp];
             return 0;
         }
-        if(find_path(name)==0 || cur_inode->i_mode != IMODE_FILE){
-            do_print("[ERROR] FILE NOT FOUND!\n");
+        if(find_path(name)==0 ){
+            do_print("[ERROR] NOT FOUND!\n");
             cur_inode = &inode[inode_id_temp];
             return 0;
         }
+        else if(cur_inode->i_mode == IMODE_FILE)
+            do_print("[SYS] FIND THE FILE :\n%s\n",name);
+        else if(cur_inode->i_mode == IMODE_DENTRY)
+            do_print("[SYS] FIND THE DENTRY :\n%s\n",name);
+
+        cur_inode = &inode[inode_id_temp];
+        return 1;
     }
-    cur_inode = &inode[inode_id_temp];
-    do_print("[SYS] FIND THE FILE!\n");
-    return 1;
+    else if(name[0]!='\0'){
+        if(find_path(name)==0 ){
+            do_print("[ERROR] NOT FOUND!\n");
+            cur_inode = &inode[inode_id_temp];
+            return 0;
+        }
+        else if(cur_inode->i_mode == IMODE_FILE)
+            do_print("[SYS] FIND THE FILE :\n%s\n",name);
+        else if(cur_inode->i_mode == IMODE_DENTRY)
+            do_print("[SYS] FIND THE DENTRY :\n%s\n",name);
+
+        cur_inode = &inode[inode_id_temp];
+        return 1;
+    }
 }

@@ -11,7 +11,7 @@ main:
 	lw $a0, kernel
 	li $a1, 0x200
 	li $a2, 0x200
-	lb	$t0, 0xa08001fd
+	lw	$t0, 0xa08001fc
 	mul $a2, $t0, $a2
 	nop
 	lw $t2,read_sd_card
