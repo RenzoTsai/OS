@@ -5,35 +5,30 @@
 #include "time.h"
 #include "string.h"
 
-dentry_t dbuf[128];
-char file_buf[BLK_SZ/sizeof(char)];
-dentry_t zero_buf[128];
+//TO RESOLVE PATH
 static    char head_dir[30];
 static    char tail_dir[30];
 
-void write_inode_map(inode_id)
-{
+void write_inode_map(uint32_t inode_id){
     //inodemap = (uint8_t *)INODEMAP_ADDR;
     //sdread((char *)inodemap, (uint32_t)INODEMAP_SD_ADDR, 0x200);
     inodemap[inode_id/8]=inodemap[inode_id/8] | (1<<(7-(inode_id % 8)));
     sdwrite((char *)inodemap, (uint32_t)INODEMAP_SD_ADDR, 0x200);
 }
-void write_block_inode(inode_id)
-{
+
+void write_block_inode(uint32_t inode_id){
     sdwrite((char *)(INODE_ADDR + BLK_SZ*((inode_id)/INODE_PERBLK)),  
     INODE_SD_ADDR + BLK_SZ*((inode_id)/INODE_PERBLK), BLK_SZ);          
 }
 
-void write_block_map(block_id)
-{
+void write_block_map(uint32_t block_id){
     //blkmap = (uint8_t *)BLKMAP_ADDR;
     //sdread((char *)blkmap, (uint32_t)BLKMAP_SD_ADDR, 0x4000); 
     blkmap[block_id/8]=blkmap[block_id/8] | (1<<(7-(block_id % 8)));
     sdwrite((char *)blkmap, (uint32_t)BLKMAP_SD_ADDR, 0x4000);
 }
 
-void init_block_map(block_id)
-{
+void init_block_map(uint32_t block_id){
     //blkmap = (uint8_t *)BLKMAP_ADDR;
     //sdread((char *)blkmap, (uint32_t)BLKMAP_SD_ADDR, 0x4000); 
     int i;
@@ -244,7 +239,7 @@ void do_statfs(){
     screen_reflush();
 }
 
-int do_mkdir(char *sname){
+int do_mkdir(char *fname){
     if(superblock->magic_num != MAGICNUM){
         do_print("[ERROR] No File System!\n");
         return -1;
@@ -255,7 +250,7 @@ int do_mkdir(char *sname){
         k = i % INODE_PERBLK;
         if(k==0)
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
-        if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,sname))
+        if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,fname))
             return 0;
         if(dbuf[k].name[0]!='\0') 
             cnt++;
@@ -265,7 +260,7 @@ int do_mkdir(char *sname){
     if(k==0){
         sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
     }
-    strcpy((char *)dbuf[k].name,sname);
+    strcpy((char *)dbuf[k].name,fname);
     dbuf[k].type=2;
     i=dbuf[k].inode_id=alloc_inode();
     sdwrite((char *)dbuf,cur_inode->direct[j],BLK_SZ);
@@ -289,7 +284,7 @@ int do_mkdir(char *sname){
     return 1;    
 }
 
-int do_rmdir(char *sname){
+int do_rmdir(char *fname){
     if(superblock->magic_num != MAGICNUM){
         do_print("[ERROR] No File System!\n");
         return -1;
@@ -302,7 +297,7 @@ int do_rmdir(char *sname){
         if(k==0){
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
         }
-        if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,sname)){
+        if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,fname)){
             dbuf[k].name[0] = '\0';
             dbuf[k].type = 0;
             free_inode(dbuf[k].inode_id);
@@ -449,7 +444,7 @@ int do_ls(char *dir){
     return 1;
 }
 
-int do_touch(char *sname){
+int do_touch(char *fname){
     if(superblock->magic_num != MAGICNUM){
         do_print("[ERROR] No File System!\n");
         return -1;
@@ -461,7 +456,7 @@ int do_touch(char *sname){
         if(k==0){
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
         }
-        if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,sname)){
+        if(dbuf[k].type==2&&!strcmp((char *)dbuf[k].name,fname)){
             return 0;
         }
     }
@@ -470,7 +465,7 @@ int do_touch(char *sname){
     if(k==0){
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
     }
-    strcpy((char *)dbuf[k].name,sname);
+    strcpy((char *)dbuf[k].name,fname);
     dbuf[k].type=1;
     i=dbuf[k].inode_id=alloc_inode();
     sdwrite((char *)dbuf,cur_inode->direct[j],BLK_SZ);
@@ -494,9 +489,9 @@ int do_touch(char *sname){
     return 1;    
 }
 
-int do_cat(char *sname){
+int do_cat(char *fname){
     inode_t * inode_cur_tmp = cur_inode;
-    if(find_path(sname)==0 || cur_inode->i_mode != IMODE_FILE){
+    if(find_path(fname)==0 || cur_inode->i_mode != IMODE_FILE){
         do_print("[ERROR] PATH NOT FOUND!\n");
         cur_inode = inode_cur_tmp;
         return 0;
@@ -526,9 +521,9 @@ int alloc_fd(){
     }
     return -1;
 }
-int do_fopen(char *sname, int access){
+int do_fopen(char *fname, int access){
     inode_t * inode_cur_tmp = cur_inode;
-    if(find_path(sname)==0 || cur_inode->i_mode != IMODE_FILE){
+    if(find_path(fname)==0 || cur_inode->i_mode != IMODE_FILE){
         do_print("[ERROR] PATH NOT FOUND!\n");
         cur_inode = inode_cur_tmp;
         return -1;
@@ -623,7 +618,7 @@ void do_fseek(int fd, int offset, int pos){
 }
 
 /* Bonus */
-int do_rename(char *sname, char *new_name){
+int do_rename(char *fname, char *new_name){
     if(superblock->magic_num != MAGICNUM){
         do_print("[ERROR] No File System!\n");
         return -1;
@@ -636,13 +631,13 @@ int do_rename(char *sname, char *new_name){
         if(k==0){
             sdread((char *)dbuf, cur_inode -> direct[j],BLK_SZ);
         }
-        if((dbuf[k].type==2||dbuf[k].type==1)&&!strcmp((char *)dbuf[k].name,sname)){
+        if((dbuf[k].type==2||dbuf[k].type==1)&&!strcmp((char *)dbuf[k].name,fname)){
             bzero(dbuf[k].name,sizeof(dbuf[k].name));
             strcpy((char *)dbuf[k].name,new_name);
             sdwrite((char *)dbuf, cur_inode->direct[j], BLK_SZ);      
             cur_inode->mtime = get_timer();
             write_block_inode(cur_inode->inum);
-            do_print("[SYS] %s",sname);
+            do_print("[SYS] %s",fname);
             do_print("-> %s\n",new_name);
             return 1;
         }

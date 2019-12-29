@@ -8,11 +8,7 @@ void system_call_helper(int fn, int arg1, int arg2, int arg3)
 {
     int ret;
     current_running->user_context.cp0_epc+=4;
-    // if(fn==SYSCALL_LS)
-    //     do_print("SYS\n");
     ret = syscall[fn](arg1, arg2, arg3);
-    // if(fn==SYSCALL_MKDIR)
-    //     do_print("ret:%d\n",ret);
     current_running->user_context.regs[2] = ret;
 }
 
@@ -156,44 +152,6 @@ void sys_wait_recv_package(){
     invoke_syscall(SYSCALL_WAIT_RECV_PACKAGE, IGNORE, IGNORE, IGNORE); 
 }
 
-// int sys_mkfs(){
-//     invoke_syscall(SYSCALL_MKFS, IGNORE, IGNORE, IGNORE); 
-// }
-
-// int sys_mkdir(char *sname){
-//     invoke_syscall(SYSCALL_MKDIR, (int)sname, IGNORE, IGNORE); 
-// }
-// int sys_rmdir(char *sname){
-//     invoke_syscall(SYSCALL_RMDIR, (int)sname, IGNORE, IGNORE); 
-// }
-// int sys_cd(char *dir){
-//     invoke_syscall(SYSCALL_CD, (int)dir, IGNORE, IGNORE); 
-// }
-// void sys_statfs(){
-//     invoke_syscall(SYSCALL_STATFS, IGNORE, IGNORE, IGNORE); 
-// }
-// int sys_ls(char *dir){
-//     invoke_syscall(SYSCALL_LS, (int)dir, IGNORE, IGNORE); 
-// }
-// int sys_touch(char *sname){
-//     invoke_syscall(SYSCALL_TOUCH, (int)sname, IGNORE, IGNORE); 
-// }
-// int sys_cat(char *sname){
-//     invoke_syscall(SYSCALL_CAT, (int)sname, IGNORE, IGNORE); 
-// }
-// int sys_fopen(char *sname, int access){
-//     invoke_syscall(SYSCALL_FOPEN, (int)sname, (int) access, IGNORE); 
-// }
-// int sys_fread(int fd, char *buff, int size){
-//     invoke_syscall(SYSCALL_FREAD, (int)fd, (int) buff, (int)fd); 
-// }
-// int sys_fwrite(int fd, char *buff, int size){
-//     invoke_syscall(SYSCALL_FWRITE, (int)fd, (int) buff, (int)fd); 
-// }
-// void sys_close(int fd){
-//     invoke_syscall(SYSCALL_FCLOSE, (int)fd, IGNORE, IGNORE); 
-// }
-
 int sys_mkfs()
 {
     invoke_syscall(SYSCALL_MKFS, IGNORE, IGNORE, IGNORE);
@@ -204,34 +162,34 @@ void sys_statfs()
     invoke_syscall(SYSCALL_STATFS, IGNORE, IGNORE, IGNORE);
 }
 
-int sys_cd(char *sname)
+int sys_cd(char *fname)
 {
-    invoke_syscall(SYSCALL_CD, (int)sname, IGNORE, IGNORE);
+    invoke_syscall(SYSCALL_CD, (int)fname, IGNORE, IGNORE);
 }
 
-int sys_mkdir(char *sname)
+int sys_mkdir(char *fname)
 {
-    invoke_syscall(SYSCALL_MKDIR, (int)sname, IGNORE, IGNORE);
+    invoke_syscall(SYSCALL_MKDIR, (int)fname, IGNORE, IGNORE);
 }
 
-int sys_rmdir(char *sname)
+int sys_rmdir(char *fname)
 {
-    invoke_syscall(SYSCALL_RMDIR, (int)sname, IGNORE, IGNORE);
+    invoke_syscall(SYSCALL_RMDIR, (int)fname, IGNORE, IGNORE);
 }
 
-int sys_ls(char *sname)
+int sys_ls(char *fname)
 {
-    invoke_syscall(SYSCALL_LS, (int)sname, IGNORE, IGNORE);
+    invoke_syscall(SYSCALL_LS, (int)fname, IGNORE, IGNORE);
 }
 
-int sys_touch(char *sname)
+int sys_touch(char *fname)
 {
-    invoke_syscall(SYSCALL_TOUCH, (int)sname, IGNORE, IGNORE);
+    invoke_syscall(SYSCALL_TOUCH, (int)fname, IGNORE, IGNORE);
 }
 
-int sys_cat(char *sname)
+int sys_cat(char *fname)
 {
-    invoke_syscall(SYSCALL_CAT, (int)sname, IGNORE, IGNORE);
+    invoke_syscall(SYSCALL_CAT, (int)fname, IGNORE, IGNORE);
 }
 
 int sys_fopen(char *name, int acess)
@@ -258,8 +216,8 @@ void sys_fseek(int fd, int offset, int pos){
     invoke_syscall(SYSCALL_FSEEK, fd, offset, pos);
 }
 
-int sys_rename(char *sname, char *new_name){
-    invoke_syscall(SYSCALL_RENAME, (int)sname, (int)new_name, IGNORE);
+int sys_rename(char *fname, char *new_name){
+    invoke_syscall(SYSCALL_RENAME, (int)fname, (int)new_name, IGNORE);
 }
 
 int sys_find(char * path,char * name){

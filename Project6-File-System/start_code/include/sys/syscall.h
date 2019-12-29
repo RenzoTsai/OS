@@ -138,19 +138,19 @@ void sys_wait_recv_package();
 
 
 int sys_mkfs();
-int sys_mkdir(char *sname);
-int sys_rmdir(char *sname);
+int sys_mkdir(char *fname);
+int sys_rmdir(char *fname);
 int sys_cd(char *dir);
 void sys_statfs();
 int sys_ls(char *dir);
-int sys_touch(char *sname);
-int sys_cat(char *sname);
-int sys_fopen(char *sname, int access);
+int sys_touch(char *fname);
+int sys_cat(char *fname);
+int sys_fopen(char *fname, int access);
 int sys_fread(int fd, char *buff, int size);
 int sys_fwrite(int fd, char *buff, int size);
 void sys_close(int fd);
 void sys_fseek(int fd, int offset, int pos);
-int sys_rename(char *sname, char *new_name);
+int sys_rename(char *fname, char *new_name);
 int sys_find(char * path,char * name);
 
 #endif
