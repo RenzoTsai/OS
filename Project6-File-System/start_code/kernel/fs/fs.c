@@ -207,7 +207,7 @@ int do_mkfs(){
     for(i=1;i<MAX_DIR_BLK;i++)
         inode->direct[i] =0;
     write_block_inode(0);
-    init_entry(inode[0].direct[0], 0, -1);
+    init_entry(inode[0].direct[0], 0, inode[0].inum);
 
     do_print("[FS] Initialize filesystem finished!       \n");
     screen_reflush();
