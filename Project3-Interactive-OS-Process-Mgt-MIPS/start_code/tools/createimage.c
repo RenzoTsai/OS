@@ -8,7 +8,7 @@
 
 void write_bootblock(FILE *image, FILE *bbfile, Elf32_Phdr *Phdr);
 Elf32_Phdr *read_exec_file(FILE *opfile);
-uint8_t count_kernel_sectors(Elf32_Phdr *Phdr);
+uint32_t count_kernel_sectors(Elf32_Phdr *Phdr);
 void extent_opt(Elf32_Phdr *Phdr_bb, Elf32_Phdr *Phdr_k, int kernelsz);
 
 Elf32_Phdr *read_exec_file(FILE *opfile)
@@ -25,9 +25,9 @@ Elf32_Phdr *read_exec_file(FILE *opfile)
 	return phdr_ptr;
 }
 
-uint8_t count_kernel_sectors(Elf32_Phdr *Phdr)
+uint32_t count_kernel_sectors(Elf32_Phdr *Phdr)
 {
-	uint8_t num;
+	uint32_t num;
 	num=(Phdr->p_memsz-1)/512+1;						//结果上取整
 	// printf("p_memsz:%d\n",Phdr->p_memsz);
 	//printf("num:%d\n",num);
@@ -87,10 +87,10 @@ void write_kernel(FILE *image, FILE *knfile, Elf32_Phdr *Phdr, int kernelsz)
 
 }
 
-void record_kernel_sectors(FILE *image, uint8_t kernelsz)
+void record_kernel_sectors(FILE *image, uint32_t kernelsz)
 {
-	fseek(image,509,SEEK_SET);
-	fwrite(&kernelsz,1,1,image); //kernelsz is kernel's sector_num
+	fseek(image,508,SEEK_SET);
+	fwrite(&kernelsz,1,4,image); //kernelsz is kernel's sector_num
 }
 
 void extent_opt(Elf32_Phdr *Phdr_bb, Elf32_Phdr *Phdr_k, int kernelsz)
@@ -129,7 +129,7 @@ int get_kernelsz( FILE *knfile, Elf32_Phdr *Phdr){
 
 int main()
 {
-	uint8_t sector_num;int kernelsz;
+	uint32_t sector_num;int kernelsz;
 	FILE* bootblock_file,*kernel_file;
 	Elf32_Phdr *bootblock_phdr,*kernel_phdr; 
 
